@@ -565,7 +565,7 @@
             async function generateAndDisplayInsights(results) {
                  pipelineStatusEl.innerHTML += '<br><span class="text-yellow-600">[3/3] Generating ecological insights...</span>';
                  insightsResultEl.innerHTML = '<p class="text-slate-500">Communicating with Gemini API...</p>';
-                 const apiKey = "";
+                 const apiKey = "AIzaSyABQw87mIPRP56tYS1GXMk_eedpj6lIyBs";
                  const counts = results.reduce((acc, result) => {
                      if (result.predicted_taxa === "ERROR") return acc;
                      const taxa = result.predicted_taxa || "Unknown";
