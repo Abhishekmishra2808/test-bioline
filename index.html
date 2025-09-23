@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Line // CMLRE Initiative</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* A more modern, clean, and readable style overhaul */
+        body {
+            font-family: 'Manrope', sans-serif;
+            background-color: #f8fafc; /* Lighter, cleaner background (Slate 50) */
+            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
+            background-size: 20px 20px;
+            color: #1e293b; /* Darker, more readable text (Slate 800) */
+        }
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+        .card {
+            background-color: rgba(255,255,255,0.8); /* Semi-transparent white */
+            border: 1px solid #e2e8f0; /* Soft border (Slate 200) */
+            backdrop-filter: blur(16px);
+            border-radius: 0.75rem; /* Rounded corners */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); /* Subtle shadow */
+        }
+        .btn-primary {
+            background-color: #0ea5e9; /* Vibrant sky blue */
+            color: #ffffff;
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            font-weight: 600;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary:hover {
+            background-color: #38bdf8; /* Lighter blue on hover */
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+        .btn-primary:disabled {
+            background-color: #e2e8f0; /* Light gray when disabled */
+            color: #94a3b8;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        /* Reveal animation remains the same, it's a good effect */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.8s ease-out, transform 0.8s ease-out;
+        }
+        .reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .section-title {
+            color: #0f172a; /* Dark slate for titles */
+            font-size: 1.125rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            font-family: 'Roboto Mono', monospace;
+        }
+        .line {
+            height: 1px;
+            background-color: #cbd5e1; /* Lighter line color (Slate 300) */
+            flex-grow: 1;
+        }
+        /* Text scramble and cursor unchanged */
+        .text-scramble {
+            display: inline-block;
+        }
+        .blinking-cursor {
+            color: #0f172a; /* Cursor matches text color */
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+        .nav-link {
+             font-family: 'Roboto Mono', monospace;
+             font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="content-wrapper">
+        <!-- LANDING PAGE -->
+        <div id="homePage">
+            <header class="fixed top-0 left-0 right-0 z-50">
+                <nav class="container mx-auto px-6 py-4 flex justify-between items-center border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md">
+                    <div class="text-xl font-bold text-slate-900 tracking-wider"><a href="#">Bio-Line</a></div>
+                    <div class="hidden md:flex items-center space-x-8">
+                        <a href="#problem" class="nav-link text-slate-500 hover:text-sky-500 transition">01_Problem</a>
+                        <a href="#solution" class="nav-link text-slate-500 hover:text-sky-500 transition">02_Solution</a>
+                        <a href="#tech" class="nav-link text-slate-500 hover:text-sky-500 transition">03_System</a>
+                    </div>
+                    <button id="loginBtn" class="btn-primary py-2 px-5 text-xs">Engage Platform</button>
+                </nav>
+            </header>
+            <main class="container mx-auto px-6 relative">
+                <section class="min-h-screen flex items-center gap-8 pt-20">
+                    <div class="w-full lg:w-1/2 z-10">
+                        <div class="text-left">
+                            <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight mb-4">
+                                <span class="text-scramble" data-text="AI-DRIVEN eDNA ANALYSIS"></span>
+                                <span class="blinking-cursor">_</span>
+                            </h1>
+                            <p class="text-lg text-slate-600 mb-8 max-w-2xl">
+                                A high-throughput pipeline to classify eukaryotic taxa and assess deep-sea biodiversity directly from raw environmental DNA, bypassing the limitations of conventional reference databases.
+                            </p>
+                            <a href="#problem" class="btn-primary py-3 px-8 text-sm">View Mission Brief</a>
+                        </div>
+                    </div>
+                    <div class="w-1/2 hidden lg:flex justify-center items-center">
+                         <img src="https://images.unsplash.com/photo-1532187863486-abf9db5a92a2?q=80&w=1974&auto=format&fit=crop" 
+                              alt="Abstract DNA visualization representing data analysis" 
+                              class="rounded-xl object-cover w-full h-full max-h-[600px] shadow-2xl shadow-slate-300 reveal">
+                    </div>
+                </section>
+                <section id="problem">
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="card p-8 reveal" data-reveal><h3 class="text-xl font-bold text-slate-900 mb-4">Incomplete Databases</h3><p class="text-slate-600">Deep-sea organisms are critically underrepresented in genetic reference databases. This data void results in misclassification, unassigned reads, and a fundamental underestimation of true biodiversity.</p></div>
+                        <div class="card p-8 reveal" data-reveal style="transition-delay: 150ms"><h3 class="text-xl font-bold text-slate-900 mb-4">Computational Bottlenecks</h3><p class="text-slate-600">Legacy bioinformatic pipelines are computationally expensive and inefficient for novel discovery. Their reliance on sequence alignment against flawed databases is a primary limiting factor.</p></div>
+                    </div>
+                </section>
+                <section id="solution">
+                    <div class="card p-8 md:p-12 reveal" data-reveal>
+                       <p class="text-base text-slate-700 leading-relaxed">Our AI-driven pipeline leverages deep learning and unsupervised clustering to analyze eDNA without primary reliance on existing databases. The system is designed to:</p>
+                        <ul class="mt-8 space-y-6">
+                            <li class="flex items-start"><span class="text-sky-500 mr-4 mt-1 font-bold">[+]</span><span><strong class="text-slate-800 font-semibold">CLASSIFY TAXA DIRECTLY:</strong> A fine-tuned DNA-BERT transformer model interprets raw sequence data, enabling classification without perfect database matches.</span></li>
+                            <li class="flex items-start"><span class="text-sky-500 mr-4 mt-1 font-bold">[+]</span><span><strong class="text-slate-800 font-semibold">DISCOVER NOVEL SPECIES:</strong> Unsupervised clustering algorithms (DBSCAN, k-means) identify and group unknown sequences, flagging potential new taxa for targeted analysis.</span></li>
+                            <li class="flex items-start"><span class="text-sky-500 mr-4 mt-1 font-bold">[+]</span><span><strong class="text-slate-800 font-semibold">GENERATE ECOLOGICAL INSIGHTS:</strong> Rapidly produce accurate estimations of species abundance and community structure to inform conservation and research priorities.</span></li>
+                        </ul>
+                    </div>
+                </section>
+                <section id="tech">
+                    <div class="card p-8 flex justify-center items-center reveal" data-reveal>
+                       <p class="text-center text-slate-500 max-w-4xl font-mono text-xs leading-relaxed tracking-wider">SYSTEM INGESTS RAW eDNA DATA -> PREPROCESSING MODULE EXTRACTS 18S rRNA & COI MARKERS -> DATA IS VECTORIZED BY A FINE-TUNED DNA-BERT TRANSFORMER -> EMBEDDINGS ARE PROCESSED VIA DUAL PATHWAYS: [A] DEEP LEARNING FOR CLASSIFICATION, [B] UNSUPERVISED CLUSTERING FOR NOVELTY DETECTION -> OUTPUT GENERATION: TAXONOMIC GROUPING, ABUNDANCE ESTIMATION, ECOLOGICAL INSIGHTS.</p>
+                    </div>
+                </section>
+                 <div class="h-24"></div>
+            </main>
+        </div>
+
+        <!-- LOGIN PAGE -->
+        <div id="loginPage" class="hidden min-h-screen flex items-center justify-center p-4">
+             <div class="w-full max-w-sm">
+                   <div class="card p-8 space-y-6">
+                       <h2 class="text-lg font-bold text-center text-slate-800 tracking-widest">// AUTHENTICATION</h2>
+                       <div>
+                           <div class="flex border border-slate-300 rounded-md overflow-hidden"><button id="userToggle" class="w-1/2 py-2 text-sm font-medium bg-slate-800 text-white">USER</button><button id="adminToggle" class="w-1/2 py-2 text-sm font-medium text-slate-500">ADMIN</button></div>
+                       </div>
+                       <form id="loginForm" class="space-y-4">
+                           <div><label for="email" class="text-xs font-medium text-slate-500 font-mono">EMAIL_ADDR</label><input type="email" id="email" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-sm text-slate-800" value="user@cmlre.gov"></div>
+                           <div><label for="password" class="text-xs font-medium text-slate-500 font-mono">PASSWORD</label><input type="password" id="password" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-slate-800" value="password"></div>
+                           <button type="submit" class="w-full btn-primary font-bold py-3 px-4 text-xs">Execute Login</button>
+                       </form>
+                   </div>
+             </div>
+        </div>
+
+        <!-- DASHBOARD PAGE -->
+        <div id="dashboardPage" class="hidden min-h-screen container mx-auto px-6 py-24">
+            <div class="flex justify-between items-center mb-8 border-b border-slate-200 pb-4">
+                <h1 class="text-2xl font-bold text-slate-900 tracking-wider">Analysis Dashboard</h1>
+                <button id="logoutBtn" class="text-slate-500 hover:text-sky-500 transition text-xs uppercase font-semibold">Logout</button>
+            </div>
+
+            <!-- Analysis Input Sections -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Single Sequence Analysis -->
+                <div class="card p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Single Sequence Analysis</h2>
+                    <textarea id="dnaSequenceInput" rows="4" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 outline-none text-sm font-mono" placeholder="> Paste raw eDNA sequence here..."></textarea>
+                    <div class="mt-4 text-right">
+                        <button id="analyzeBtn" class="btn-primary py-2 px-6 text-xs">Analyze</button>
+                    </div>
+                </div>
+                <!-- Batch Analysis -->
+                <div class="card p-6">
+                    <h2 class="text-lg font-bold text-slate-800 mb-4">Batch Analysis (CSV)</h2>
+                    <p class="text-xs text-slate-500 mb-4">Upload a CSV file with 'sample_id' and 'sequence' columns.</p>
+                    <input type="file" id="csvFileInput" class="hidden" accept=".csv">
+                    <button id="csvUploadBtn" class="w-full border border-dashed border-slate-300 hover:border-sky-500 transition py-4 text-slate-500 text-sm rounded-md hover:text-sky-600 bg-slate-50/50">
+                        CLICK TO UPLOAD CSV FILE
+                    </button>
+                    
+                    <!-- Metadata Inputs -->
+                    <div class="mt-4 space-y-3">
+                        <div>
+                            <label for="environmentType" class="text-xs font-medium text-slate-500">ENVIRONMENT TYPE</label>
+                            <input type="text" id="environmentType" placeholder="e.g. Hydrothermal Vent" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 outline-none text-sm">
+                        </div>
+                        <div>
+                            <label for="batchDepth" class="text-xs font-medium text-slate-500">DEPTH (meters)</label>
+                            <input type="number" id="batchDepth" step="1" placeholder="e.g. 2500" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 outline-none text-sm">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 text-right">
+                        <button id="batchAnalyzeBtn" class="btn-primary py-2 px-6 text-xs" disabled>Analyze Batch</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div id="resultsSection" class="hidden">
+                 <div class="mb-8 card p-4">
+                     <h3 class="text-lg font-semibold text-slate-800 mb-4">Pipeline Status</h3>
+                     <div id="pipelineStatus" class="text-xs font-mono"></div>
+                 </div>
+
+                 <!-- NEW: Gene Marker Results Card -->
+                 <div id="markerResultsCard" class="hidden mb-8 card p-6">
+                     <h3 class="text-lg font-semibold text-slate-800 mb-4">Gene Marker Detection</h3>
+                     <div id="markerResultsContent"></div>
+                 </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- ECOLOGICAL INSIGHTS SECTION -->
+                        <div id="insightsCard" class="card p-6">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-bold text-slate-800">Ecological Insights Report</h3>
+                                <button id="downloadReportBtn" class="hidden btn-primary py-2 px-5 text-xs">Download Report</button>
+                            </div>
+                            <div id="insightsResult" class="space-y-6 text-sm">
+                                <p class="text-slate-500">Ecological insights will be generated after batch analysis is complete.</p>
+                            </div>
+                        </div>
+
+                        <div class="card p-6">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">Taxonomic Classification</h3>
+                            <div id="classificationResult" class="space-y-3 text-sm">
+                                <p class="text-slate-500">Results will be summarized in the abundance chart. Single sequence analysis results will appear here.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="space-y-8">
+                        <div class="card p-6">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">Taxa Abundance</h3>
+                            <canvas id="abundanceChart"></canvas>
+                        </div>
+                        <div class="card p-6">
+                            <h3 class="text-lg font-bold text-slate-800 mb-4">Novelty Detection</h3>
+                            <div id="noveltyResult" class="text-sm p-4 bg-slate-100 border border-slate-200 rounded-md text-slate-700"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div class="h-24"></div>
+        </div>
+    </div>
+    
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- Section Title Creation ---
+            const createSectionTitle = (n, t) => `<div data-reveal class="flex items-center gap-4 py-24"><span class="section-title text-slate-400">${n}</span><span class="section-title">${t}</span><div class="line"></div></div>`;
+            
+            const problemSection = document.getElementById('problem');
+            if (problemSection) {
+                const title = createSectionTitle('01', 'Problem Statement');
+                const content = problemSection.innerHTML;
+                problemSection.innerHTML = title + content;
+            }
+            const solutionSection = document.getElementById('solution');
+            if (solutionSection) {
+                const title = createSectionTitle('02', 'Proposed Solution');
+                const content = solutionSection.innerHTML;
+                solutionSection.innerHTML = title + content;
+            }
+            const techSection = document.getElementById('tech');
+            if (techSection) {
+                const title = createSectionTitle('03', 'System Architecture');
+                const content = techSection.innerHTML;
+                techSection.innerHTML = title + content;
+            }
+            
+            // --- Text Scramble Effect ---
+            class TextScrambleEffect {
+                constructor(el) { this.el = el; this.chars = '!<>-_\\/[]{}—=+*^?#________'; this.update = this.update.bind(this); }
+                setText(newText) {
+                    const oldText = this.el.innerText;
+                    const length = Math.max(oldText.length, newText.length);
+                    const promise = new Promise((resolve) => this.resolve = resolve);
+                    this.queue = [];
+                    for (let i = 0; i < length; i++) {
+                        const from = oldText[i] || ''; const to = newText[i] || '';
+                        const start = Math.floor(Math.random() * 40); const end = start + Math.floor(Math.random() * 40);
+                        this.queue.push({ from, to, start, end });
+                    }
+                    cancelAnimationFrame(this.frameRequest); this.frame = 0; this.update(); return promise;
+                }
+                update() {
+                    let output = ''; let complete = 0;
+                    for (let i = 0, n = this.queue.length; i < n; i++) {
+                        let { from, to, start, end, char } = this.queue[i];
+                        if (this.frame >= end) { complete++; output += to; } 
+                        else if (this.frame >= start) {
+                            if (!char || Math.random() < 0.28) { char = this.randomChar(); this.queue[i].char = char; }
+                            output += `<span class="opacity-50">${char}</span>`;
+                        } else { output += from; }
+                    }
+                    this.el.innerHTML = output;
+                    if (complete === this.queue.length) { this.resolve(); } 
+                    else { this.frameRequest = requestAnimationFrame(this.update); this.frame++; }
+                }
+                randomChar() { return this.chars[Math.floor(Math.random() * this.chars.length)]; }
+            }
+            
+            const scrambleElements = document.querySelectorAll('.text-scramble');
+            scrambleElements.forEach(el => {
+                const fx = new TextScrambleEffect(el); const originalText = el.dataset.text;
+                setTimeout(() => {
+                    el.nextElementSibling.style.display = 'inline-block';
+                    fx.setText(originalText).then(() => { setTimeout(() => { el.nextElementSibling.style.display = 'none'; }, 1000); });
+                }, 500);
+            });
+
+            // --- Scroll Reveal Effect ---
+            const revealElements = document.querySelectorAll('[data-reveal]');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
+                });
+            }, { threshold: 0.1 });
+            revealElements.forEach(el => { observer.observe(el); });
+
+            // --- Page Navigation and UI Logic ---
+            const homePage = document.getElementById('homePage');
+            const loginPage = document.getElementById('loginPage');
+            const dashboardPage = document.getElementById('dashboardPage');
+            const loginBtn = document.getElementById('loginBtn');
+            const loginForm = document.getElementById('loginForm');
+            const logoutBtn = document.getElementById('logoutBtn');
+            const userToggle = document.getElementById('userToggle');
+            const adminToggle = document.getElementById('adminToggle');
+
+            loginBtn.addEventListener('click', () => { homePage.style.display = 'none'; loginPage.style.display = 'flex'; });
+            loginForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const isAdminActive = adminToggle.classList.contains('bg-slate-800');
+
+                if (isAdminActive) {
+                    window.location.href = './admin.html'; 
+                } else {
+                    loginPage.style.display = 'none';
+                    dashboardPage.style.display = 'block';
+                }
+            });
+            logoutBtn.addEventListener('click', () => {
+                dashboardPage.style.display = 'none';
+                homePage.style.display = 'block';
+                document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('dnaSequenceInput').value = '';
+            });
+            const setToggle = (active, inactive) => {
+                 active.classList.add('bg-slate-800', 'text-white'); 
+                 active.classList.remove('text-slate-500');
+                 inactive.classList.remove('bg-slate-800', 'text-white'); 
+                 inactive.classList.add('text-slate-500');
+            };
+            userToggle.addEventListener('click', () => setToggle(userToggle, adminToggle));
+            adminToggle.addEventListener('click', () => setToggle(adminToggle, userToggle));
+
+            // ===============================================================
+            // ================== API INTEGRATION STARTS HERE ================
+            // ===============================================================
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const batchAnalyzeBtn = document.getElementById('batchAnalyzeBtn');
+            const csvFileInput = document.getElementById('csvFileInput');
+            const csvUploadBtn = document.getElementById('csvUploadBtn');
+            
+            const resultsSection = document.getElementById('resultsSection');
+            const pipelineStatusEl = document.getElementById('pipelineStatus');
+            const markerResultsCard = document.getElementById('markerResultsCard');
+            const markerResultsContent = document.getElementById('markerResultsContent');
+            const classificationResultEl = document.getElementById('classificationResult');
+            const noveltyResultEl = document.getElementById('noveltyResult');
+            const insightsResultEl = document.getElementById('insightsResult');
+            const analyzeButtonText = 'Analyze';
+            const downloadReportBtn = document.getElementById('downloadReportBtn');
+            
+            const GENE_MARKER_API_URL = "https://gene-marker-api-894435700020.us-central1.run.app";
+            const DNABERT_API_ENDPOINT = 'https://dnabert-classifier-83913461974.asia-south2.run.app/predict';
+            let parsedCsvData = [];
+            let currentInsightsData = null; // To store the latest insights for PDF generation
+
+            analyzeBtn.addEventListener('click', async () => {
+                const dnaInput = document.getElementById('dnaSequenceInput');
+                let rawSequence = dnaInput.value.trim();
+                if (rawSequence === "") {
+                    rawSequence = "> Using example sequence...\nGATCCTCCAGENTTAGTTCGCTTGCACTGAATAGACCCGTCACACAGGAGAGTTTCTACAGGCGGTTAGAATAAAATCAATAGGACTCTTTCGAGGCCCTGTAATTGGAATGAGTCCACGTTAATAAGGGTGAGGGTCGGCTGTTCCTAGGGCCGAGGTCGTGAGTGGTGGTTATGCCTGTCGAACTAGAGATCGGTGAGAGGGGATTCGTATT";
+                    dnaInput.value = rawSequence;
+                }
+                await performSingleAnalysis(rawSequence);
+            });
+
+            csvUploadBtn.addEventListener('click', () => csvFileInput.click());
+
+            csvFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const content = e.target.result;
+                            const rows = content.split('\n').filter(row => row.trim() !== '');
+                            const headers = rows[0].split(',').map(h => h.trim());
+                            const sampleIdIndex = headers.indexOf('sample_id');
+                            const sequenceIndex = headers.indexOf('sequence');
+                            if (sampleIdIndex === -1 || sequenceIndex === -1) throw new Error("CSV must contain 'sample_id' and 'sequence' columns.");
+                            parsedCsvData = rows.slice(1).map(row => {
+                                const values = row.split(',');
+                                return {
+                                    sample_id: values[sampleIdIndex].trim(),
+                                    sequence: values[sequenceIndex].trim()
+                                };
+                            });
+                            csvUploadBtn.textContent = `${file.name} (${parsedCsvData.length} sequences) ready.`;
+                            batchAnalyzeBtn.disabled = false;
+                        } catch (err) {
+                            csvUploadBtn.textContent = 'Error parsing file. Check format.';
+                            console.error(err);
+                            parsedCsvData = [];
+                            batchAnalyzeBtn.disabled = true;
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            });
+            
+            batchAnalyzeBtn.addEventListener('click', async () => {
+                if (parsedCsvData.length === 0) return;
+                resultsSection.classList.remove('hidden');
+                let allTaxaResults = [];
+                batchAnalyzeBtn.disabled = true;
+                analyzeBtn.disabled = true;
+
+                pipelineStatusEl.innerHTML = `
+                    <div class="flex items-center justify-between"><span>[1/3] Detecting gene markers...</span><span id="batchProgressText">0 / ${parsedCsvData.length}</span></div>
+                    <div class="w-full bg-slate-200 h-1 mt-2 rounded-full overflow-hidden"><div id="batchProgressBar" class="bg-sky-500 h-1" style="width: 0%"></div></div>`;
+                let foundMarkers = [];
+                for (let i = 0; i < parsedCsvData.length; i++) {
+                    const item = parsedCsvData[i];
+                    try {
+                        const markerData = await callGeneMarkerApi(item.sequence);
+                        const markers = filterRelevantMarkers(markerData.predictions || []);
+                        markers.forEach(marker => foundMarkers.push({ original_sample_id: item.sample_id, marker_label: marker.label, marker_sequence: marker.sequence }));
+                    } catch (error) { console.error(`Marker detection failed for sample ${item.sample_id}:`, error); }
+                    const progress = ((i + 1) / parsedCsvData.length) * 100;
+                    document.getElementById('batchProgressBar').style.width = `${progress}%`;
+                    document.getElementById('batchProgressText').textContent = `${i + 1} / ${parsedCsvData.length}`;
+                }
+
+                pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[1/3] Marker detection complete. Found ${foundMarkers.length} markers.</span>`;
+                pipelineStatusEl.innerHTML += `
+                    <div class="flex items-center justify-between mt-2"><span>[2/3] Classifying taxa...</span><span id="taxaProgressText">0 / ${foundMarkers.length}</span></div>
+                    <div class="w-full bg-slate-200 h-1 mt-2 rounded-full overflow-hidden"><div id="taxaProgressBar" class="bg-sky-500 h-1" style="width: 0%"></div></div>`;
+                for (let i = 0; i < foundMarkers.length; i++) {
+                    const marker = foundMarkers[i];
+                    try {
+                        const result = await callDnabertApi(marker.marker_sequence);
+                        allTaxaResults.push(result);
+                    } catch (error) {
+                        console.error(`Taxa classification failed for a marker from ${marker.original_sample_id}:`, error);
+                        allTaxaResults.push({ predicted_taxa: "ERROR", predicted_group: "ERROR", novelty_status: "ERROR", taxa_confidence: 0, group_confidence: 0 });
+                    }
+                    const progress = ((i + 1) / foundMarkers.length) * 100;
+                    document.getElementById('taxaProgressBar').style.width = `${progress}%`;
+                    document.getElementById('taxaProgressText').textContent = `${i + 1} / ${foundMarkers.length}`;
+                }
+
+                pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[2/3] Classification complete.</span>`;
+                updateAbundanceChart(allTaxaResults);
+                const novelCount = allTaxaResults.filter(r => r.novelty_status && r.novelty_status.includes('Potentially Novel')).length;
+                noveltyResultEl.innerHTML = `<span class="text-2xl font-bold text-slate-800">${novelCount}</span> <span class="text-slate-500">of ${allTaxaResults.length} sequences flagged as potentially novel.</span>`;
+                await generateAndDisplayInsights(allTaxaResults);
+                batchAnalyzeBtn.disabled = false;
+                analyzeBtn.disabled = false;
+            });
+
+            async function performSingleAnalysis(rawSequence) {
+                resultsSection.classList.remove('hidden');
+                classificationResultEl.innerHTML = '<p class="text-slate-500">Awaiting classification results...</p>';
+                markerResultsCard.classList.add('hidden');
+                markerResultsContent.innerHTML = '';
+                analyzeBtn.disabled = true;
+                analyzeBtn.textContent = 'Analyzing...';
+                try {
+                    pipelineStatusEl.innerHTML = '<span class="text-yellow-600">[1/2] Detecting gene markers (COI/18sRNA)...</span>';
+                    const sequence = rawSequence.replace(/>.*/g, '').replace(/\s/g, '').toUpperCase();
+                    if (!/^[ATCGN]+$/.test(sequence)) throw new Error("Input contains invalid characters. Only A, T, G, C, and N are allowed.");
+                    const markerData = await callGeneMarkerApi(sequence);
+                    const markers = filterRelevantMarkers(markerData.predictions || []);
+                    if (markers.length === 0) throw new Error("No relevant gene markers (COI or 18sRNA) were detected.");
+                    
+                    markerResultsCard.classList.remove('hidden');
+                    let markerHTML = `<p class="text-sm text-slate-600 mb-4">Detected ${markers.length} relevant marker(s):</p>`;
+                    markers.forEach(marker => {
+                        markerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-md mb-2"><p class="font-semibold text-slate-800">${marker.label}</p><p class="text-xs text-slate-500 break-all mt-1 font-mono">${marker.sequence.substring(0, 100)}...</p></div>`;
+                    });
+                    markerResultsContent.innerHTML = markerHTML;
+                    pipelineStatusEl.innerHTML = `<span class="text-green-600">[1/2] Marker detection complete.</span>`;
+                    
+                    pipelineStatusEl.innerHTML += '<br><span class="text-yellow-600">[2/2] Classifying detected marker(s)...</span>';
+                    classificationResultEl.innerHTML = '';
+                    for (const marker of markers) {
+                        const taxaData = await callDnabertApi(marker.sequence);
+                        populateSingleResult(taxaData, marker.label);
+                    }
+                    pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[2/2] Classification complete. [OK]</span>`;
+                } catch (error) {
+                    console.error('Analysis Failed:', error);
+                    pipelineStatusEl.innerHTML = `<div class="text-red-600 p-2 border border-red-500/50 bg-red-500/10 rounded-md"><b>Error:</b> ${error.message}</div>`;
+                    populateSingleResult(null);
+                } finally {
+                    analyzeBtn.disabled = false;
+                    analyzeBtn.textContent = analyzeButtonText;
+                }
+            }
+
+            async function callGeneMarkerApi(sequence) {
+                const response = await fetch(`${GENE_MARKER_API_URL}/predict-text/`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sequence }) });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(`Gene Marker API Error (${response.status}): ${errorData.detail || 'Failed to fetch'}`);
+                }
+                return await response.json();
+            }
+
+            function filterRelevantMarkers(predictions) {
+                const coiPredictions = predictions.filter(p => p.label.toLowerCase().includes('coi'));
+                const bestCOI = coiPredictions.length > 0 ? coiPredictions.reduce((max, p) => p.confidence > max.confidence ? p : max, coiPredictions[0]) : null;
+                const rRNAPredictions = predictions.filter(p => p.label.toLowerCase().includes('18s'));
+                const best18sRNA = rRNAPredictions.length > 0 ? rRNAPredictions.reduce((max, p) => p.confidence > max.confidence ? p : max, rRNAPredictions[0]) : null;
+                if (bestCOI && best18sRNA) return bestCOI.confidence >= best18sRNA.confidence ? [bestCOI] : [best18sRNA];
+                if (bestCOI) return [bestCOI];
+                if (best18sRNA) return [best18sRNA];
+                return [];
+            }
+            
+            async function callDnabertApi(sequence) {
+                const response = await fetch(DNABERT_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sequence }) });
+                if (!response.ok) throw new Error(`Bio-Line API Error (${response.status}): ${await response.text()}`);
+                const result = await response.json();
+                if (result && result.taxa_confidence < 0.75) result.novelty_status = `Potentially Novel (Confidence < 75%)`;
+                return result;
+            }
+            
+            async function generateAndDisplayInsights(results) {
+                 pipelineStatusEl.innerHTML += '<br><span class="text-yellow-600">[3/3] Generating ecological insights...</span>';
+                 insightsResultEl.innerHTML = '<p class="text-slate-500">Communicating with Gemini API...</p>';
+                 const apiKey = "";
+                 const counts = results.reduce((acc, result) => {
+                     if (result.predicted_taxa === "ERROR") return acc;
+                     const taxa = result.predicted_taxa || "Unknown";
+                     if (!acc[taxa]) acc[taxa] = { count: 0, totalConfidence: 0, group: result.predicted_group };
+                     acc[taxa].count++;
+                     acc[taxa].totalConfidence += result.taxa_confidence;
+                     return acc;
+                 }, {});
+                 const aggregatedData = Object.entries(counts).map(([taxa, data]) => ({ taxon: taxa, group: data.group, abundance: data.count, avg_confidence: parseFloat((data.totalConfidence / data.count).toFixed(2)) }));
+                 const sampleId = "BatchAnalysis-" + new Date().toISOString().slice(0,10);
+                 const environment = document.getElementById('environmentType').value || 'Not Specified';
+                 const depth = document.getElementById('batchDepth').value || 'Not Specified';
+                 const prompt = `You are an expert marine ecologist. Your task is to generate a concise ecological insights report in a structured JSON format based on eDNA sample data.\n\n### CONTEXT\n- Sample ID: ${sampleId}\n- Environment Type: ${environment}\n- Depth: ${depth} meters\n\n### INPUT DATA\n\`\`\`json\n${JSON.stringify(aggregatedData, null, 2)}\n\`\`\`\n\n### YOUR TASK\nAnalyze the data and return a JSON object with the exact following structure. For "insight", provide a 2-3 sentence summary. For "richness_value", provide the total number of unique taxa. For "evenness_category", classify as 'Low', 'Moderate', or 'High'. For "protist_count" and "metazoan_count", provide the total read count for each group.\n\n### REQUIRED JSON OUTPUT STRUCTURE\n\`\`\`json\n{ "summary": { "title": "Ecological Summary", "insight": "" }, "biodiversity_assessment": { "title": "Biodiversity Assessment", "insight": "", "richness_value": 0, "evenness_category": "" }, "community_structure": { "title": "Community Structure", "insight": "", "protist_count": 0, "metazoan_count": 0 }, "dominant_taxa": { "title": "Dominant Taxa & Significance", "insight": "" }, "trophic_levels": { "title": "Ecological Roles & Food Web", "insight": "" }, "bioindicators": { "title": "Bioindicator Analysis", "insight": "" } }\n\`\`\``;
+                 try {
+                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                     if (!response.ok) throw new Error(`Gemini API Error (${response.status}): ${await response.text()}`);
+                     const result = await response.json();
+                     if (!result.candidates?.[0]?.content?.parts?.[0]) throw new Error("Invalid response structure from Gemini API.");
+                     const rawText = result.candidates[0].content.parts[0].text;
+                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                     if (!jsonMatch) throw new Error("Invalid JSON response from Gemini API.");
+                     const insights = JSON.parse(jsonMatch[0]);
+                     currentInsightsData = insights; // Store for PDF generation
+                     displayEcologicalInsights(insights);
+                     downloadReportBtn.classList.remove('hidden');
+                     pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[3/3] Insights generated successfully. [OK]</span>`;
+                 } catch (error) {
+                     console.error("Gemini API call failed:", error);
+                     insightsResultEl.innerHTML = `<div class="text-red-600 font-light">Failed to generate insights: ${error.message}</div>`;
+                     pipelineStatusEl.innerHTML += `<br><span class="text-red-600">[3/3] Failed to generate insights.</span>`;
+                 }
+            }
+            
+            function createCommunityChart(canvasId, protistCount, metazoanCount) {
+                 const chartInstance = Chart.getChart(canvasId);
+                 if(chartInstance) chartInstance.destroy();
+                 const ctx = document.getElementById(canvasId).getContext('2d');
+                 new Chart(ctx, { type: 'doughnut', data: { labels: ['Protista', 'Metazoa'], datasets: [{ data: [protistCount, metazoanCount], backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)'], borderColor: ['#3B82F6', '#EF4444'], borderWidth: 2 }] }, options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', boxWidth: 12, padding: 15, font: { family: "'Roboto Mono', monospace" } } }, title: { display: false } } } });
+            }
+
+            function displayEcologicalInsights(insights) {
+                insightsResultEl.innerHTML = '';
+                if (!insights) { insightsResultEl.innerHTML = '<p class="text-slate-500">No insights were generated.</p>'; return; }
+                const createInsightBlock = (item) => `<div class="border-l-2 border-slate-200 pl-4"><h4 class="font-bold text-slate-800 tracking-wide">${item.title || 'Insight'}</h4><p class="text-slate-600 mt-1">${item.insight || 'No details provided.'}</p></div>`;
+                if (insights.summary) insightsResultEl.innerHTML += createInsightBlock(insights.summary);
+                if (insights.biodiversity_assessment) {
+                    const item = insights.biodiversity_assessment;
+                    const infographicHTML = `<div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200/50"><div class="text-center p-2 bg-slate-100 rounded-md"><div class="text-2xl font-bold text-slate-800">${item.richness_value || 'N/A'}</div><div class="text-xs text-slate-500 uppercase tracking-wider">Taxa Richness</div></div><div class="text-center p-2 bg-slate-100 rounded-md"><div class="text-2xl font-bold text-slate-800">${item.evenness_category || 'N/A'}</div><div class="text-xs text-slate-500 uppercase tracking-wider">Evenness</div></div></div>`;
+                    insightsResultEl.innerHTML += createInsightBlock(item) + infographicHTML;
+                }
+                if (insights.community_structure) {
+                    const item = insights.community_structure;
+                    const chartHTML = `<div class="mt-4 pt-4 border-t border-slate-200/50"><canvas id="communityDonutChart" class="max-h-48 mx-auto"></canvas></div>`;
+                    insightsResultEl.innerHTML += createInsightBlock(item) + chartHTML;
+                    setTimeout(() => createCommunityChart('communityDonutChart', item.protist_count || 0, item.metazoan_count || 0), 0);
+                }
+                if (insights.dominant_taxa) insightsResultEl.innerHTML += createInsightBlock(insights.dominant_taxa);
+                if (insights.trophic_levels) insightsResultEl.innerHTML += createInsightBlock(insights.trophic_levels);
+                if (insights.bioindicators) insightsResultEl.innerHTML += createInsightBlock(insights.bioindicators);
+            }
+
+            function populateSingleResult(apiData, markerLabel = '') {
+                if (apiData) {
+                    classificationResultEl.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-md mb-2 font-mono text-xs"><div class="flex justify-between items-center mb-1"><span class="text-slate-500">Source Marker:</span><span class="text-slate-800 font-semibold">${markerLabel}</span></div><div class="flex justify-between items-center"><span class="text-slate-500">Predicted Group:</span><span class="text-slate-800 font-semibold">${apiData.predicted_group || 'N/A'}</span><span class="text-slate-400">CONF: ${(apiData.group_confidence * 100).toFixed(0)}%</span></div><div class="flex justify-between items-center"><span class="text-slate-500">Predicted Taxa:</span><span class="text-slate-800 font-semibold">${apiData.predicted_taxa || 'N/A'}</span><span class="text-slate-400">CONF: ${(apiData.taxa_confidence * 100).toFixed(0)}%</span></div></div>`;
+                    noveltyResultEl.innerHTML = `<span class="font-semibold">${apiData.novelty_status}</span>`;
+                } else {
+                    classificationResultEl.innerHTML = '<div class="text-slate-500">Analysis failed. See status.</div>';
+                    noveltyResultEl.innerHTML = 'N/A';
+                }
+                updateAbundanceChart([]);
+                insightsResultEl.innerHTML = '<p class="text-slate-500">Ecological insights are only available for batch analysis.</p>';
+            }
+            
+            function updateAbundanceChart(results) {
+                 const counts = results.reduce((acc, result) => { acc[result.predicted_taxa || "Unknown"] = (acc[result.predicted_taxa || "Unknown"] || 0) + 1; return acc; }, {});
+                 const sortedTaxa = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+                 const labels = sortedTaxa.slice(0, 15).map(item => item[0]);
+                 const data = sortedTaxa.slice(0, 15).map(item => item[1]);
+                 const abundanceChartInstance = Chart.getChart('abundanceChart');
+                 if(abundanceChartInstance) abundanceChartInstance.destroy();
+                 const ctx = document.getElementById('abundanceChart').getContext('2d');
+                 Chart.defaults.font.family = "'Manrope', sans-serif";
+                 new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Count', data: data, backgroundColor: '#0ea5e9', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, scales: { y: { ticks: { color: '#64748b', font: {size: 10} }, grid: { color: '#e2e8f0' } }, x: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' } } }, plugins: { legend: { display: false }, title: { display: labels.length === 0, text: 'No batch data to display', color: '#94a3b8', font: {size: 12} } } } });
+            }
+
+            function generatePdfReport(insights) {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+                const docWidth = doc.internal.pageSize.getWidth();
+                const docHeight = doc.internal.pageSize.getHeight();
+                const margin = 15;
+                let yPos = margin;
+
+                const addWrappedText = (text, x, y, options) => {
+                    const maxWidth = docWidth - (margin * 2);
+                    const lines = doc.splitTextToSize(text, maxWidth);
+                    doc.text(lines, x, y, options);
+                    return y + (lines.length * 5); // Approximate line height (5mm)
+                };
+                
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(20);
+                doc.text("Ecological Insights Report", docWidth / 2, yPos, { align: "center" });
+                yPos += 15;
+
+                doc.setFontSize(10);
+                doc.setFont("helvetica", "normal");
+                const environment = document.getElementById('environmentType').value || 'Not Specified';
+                const depth = document.getElementById('batchDepth').value || 'Not Specified';
+                doc.text(`Environment: ${environment}`, margin, yPos);
+                doc.text(`Depth: ${depth} meters`, docWidth - margin, yPos, { align: "right" });
+                yPos += 6;
+                doc.setLineWidth(0.2);
+                doc.line(margin, yPos, docWidth - margin, yPos);
+                yPos += 10;
+
+                const renderSection = (item) => {
+                    if (!item) return;
+                     if (yPos > docHeight - 30) { // Check for page break
+                        doc.addPage();
+                        yPos = margin;
+                    }
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(12);
+                    yPos = addWrappedText(item.title, margin, yPos);
+                    yPos += 1;
+                    doc.setFont("helvetica", "normal");
+                    doc.setFontSize(10);
+                    yPos = addWrappedText(item.insight, margin, yPos);
+                    if (item.richness_value !== undefined) {
+                        yPos = addWrappedText(`Taxa Richness: ${item.richness_value} | Evenness: ${item.evenness_category}`, margin, yPos);
+                    }
+                    if (item.protist_count !== undefined) {
+                        yPos = addWrappedText(`Protist Count: ${item.protist_count} | Metazoan Count: ${item.metazoan_count}`, margin, yPos);
+                    }
+                    yPos += 8;
+                };
+                
+                Object.values(insights).forEach(renderSection);
+
+                const pageCount = doc.internal.getNumberOfPages();
+                for(let i = 1; i <= pageCount; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(10);
+                    doc.setTextColor(150);
+                    doc.text('Report by Bio-Line', docWidth / 2, docHeight - 10, { align: 'center' });
+                }
+
+                doc.save('Bio-Line-Ecological-Report.pdf');
+            }
+
+            downloadReportBtn.addEventListener('click', () => {
+                if (currentInsightsData) {
+                    generatePdfReport(currentInsightsData);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
+
