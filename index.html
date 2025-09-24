@@ -9,52 +9,79 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        /* A more modern, clean, and readable style overhaul */
         body {
-            font-family: 'Manrope', sans-serif;
-            background-color: #f8fafc; /* Lighter, cleaner background (Slate 50) */
-            background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-            background-size: 20px 20px;
-            color: #1e293b; /* Darker, more readable text (Slate 800) */
+            font-family: 'Inter', sans-serif;
+            background-color: #000000;
+            color: #e5e7eb;
+            --grid-color: rgba(255, 255, 255, 0.07);
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 30px 30px;
         }
+        .font-mono {
+            font-family: 'Roboto Mono', monospace;
+        }
+
+        /* --- MODIFICATION 1: Position the Spline model as a background element on the right --- */
+       spline-viewer {
+            position: fixed; /* Fixed position relative to the viewport */
+            top: 0;
+            right: 0;
+            width: 50vw; /* Occupies the right half of the screen */
+            height: 100vh;
+            z-index: 0; /* Sits behind the content */
+            transform: scale(2.5); /* --- MODIFICATION: "Super zoom" the model by 2.5x --- */
+            transform-origin: center; /* Ensure it zooms from the center */
+            
+            /* * --- MODIFICATION: Enable Model Interaction --- 
+             * The 'pointer-events: none;' property has been removed.
+             * This allows mouse events (like scrolling to zoom, clicking, and dragging)
+             * to be captured by the Spline model instead of passing through it.
+             * Now, you can interact with the 3D model directly.
+            */
+        }
+
+
         .content-wrapper {
             position: relative;
-            z-index: 1;
+            z-index: 1; /* Ensures content is on top of the spline model */
         }
         .card {
-            background-color: rgba(255,255,255,0.8); /* Semi-transparent white */
-            border: 1px solid #e2e8f0; /* Soft border (Slate 200) */
+            background-color: rgba(26, 26, 26, 0.6);
+            border: 1px solid #3f3f46;
             backdrop-filter: blur(16px);
-            border-radius: 0.75rem; /* Rounded corners */
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05); /* Subtle shadow */
+            -webkit-backdrop-filter: blur(16px);
         }
         .btn-primary {
-            background-color: #0ea5e9; /* Vibrant sky blue */
+            background-color: transparent;
             color: #ffffff;
             transition: all 0.3s ease;
-            border: 1px solid transparent;
-            letter-spacing: 0.05em;
+            border: 1px solid #ffffff;
+            letter-spacing: 0.1em;
             text-transform: uppercase;
-            font-weight: 600;
-            border-radius: 0.375rem;
-            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
         }
         .btn-primary:hover {
-            background-color: #38bdf8; /* Lighter blue on hover */
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            background-color: #ffffff;
+            color: #000000;
         }
         .btn-primary:disabled {
-            background-color: #e2e8f0; /* Light gray when disabled */
-            color: #94a3b8;
+            color: #6b7280;
+            border-color: #3f3f46;
+            background-color: transparent;
             cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
         }
-        /* Reveal animation remains the same, it's a good effect */
+        .btn-secondary {
+            background-color: transparent;
+            color: #a1a1aa;
+            border: 1px solid #3f3f46;
+        }
+        .btn-secondary:hover {
+             background-color: #27272a;
+             color: #ffffff;
+        }
         .reveal {
             opacity: 0;
             transform: translateY(30px);
@@ -65,197 +92,194 @@
             transform: translateY(0);
         }
         .section-title {
-            color: #0f172a; /* Dark slate for titles */
-            font-size: 1.125rem;
-            font-weight: 700;
-            letter-spacing: 0.1em;
+            color: #ffffff;
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.2em;
             text-transform: uppercase;
             font-family: 'Roboto Mono', monospace;
         }
         .line {
             height: 1px;
-            background-color: #cbd5e1; /* Lighter line color (Slate 300) */
+            background-color: #27272a;
             flex-grow: 1;
         }
-        /* Text scramble and cursor unchanged */
         .text-scramble {
             display: inline-block;
         }
         .blinking-cursor {
-            color: #0f172a; /* Cursor matches text color */
+            color: white;
             animation: blink 1s step-end infinite;
         }
         @keyframes blink {
             50% { opacity: 0; }
         }
-        .nav-link {
-             font-family: 'Roboto Mono', monospace;
-             font-size: 0.8rem;
+        #reportModal.hidden, #chatbot-container.hidden {
+            display: none;
         }
     </style>
 </head>
+
 <body class="antialiased">
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.10.68/build/spline-viewer.js"></script>
+    <spline-viewer url="https://prod.spline.design/j-bDax7HxMeYiO4s/scene.splinecode"></spline-viewer>
+
     <div class="content-wrapper">
-        <!-- LANDING PAGE -->
         <div id="homePage">
             <header class="fixed top-0 left-0 right-0 z-50">
-                <nav class="container mx-auto px-6 py-4 flex justify-between items-center border-b border-slate-200/80 bg-slate-50/80 backdrop-blur-md">
-                    <div class="text-xl font-bold text-slate-900 tracking-wider"><a href="#">Bio-Line</a></div>
-                    <div class="hidden md:flex items-center space-x-8">
-                        <a href="#problem" class="nav-link text-slate-500 hover:text-sky-500 transition">01_Problem</a>
-                        <a href="#solution" class="nav-link text-slate-500 hover:text-sky-500 transition">02_Solution</a>
-                        <a href="#tech" class="nav-link text-slate-500 hover:text-sky-500 transition">03_System</a>
+                <nav class="container mx-auto px-6 py-4 flex justify-between items-center border-b border-gray-800 bg-black/50 backdrop-blur-md">
+                    <div class="text-lg font-bold text-white tracking-widest"><a href="#">Bio-Line</a></div>
+                    <div class="hidden md:flex items-center space-x-8 text-sm uppercase font-mono">
+                        <a href="#problem" class="text-gray-400 hover:text-white transition">01_Problem</a>
+                        <a href="#solution" class="text-gray-400 hover:text-white transition">02_Solution</a>
+                        <a href="#tech" class="text-gray-400 hover:text-white transition">03_System</a>
                     </div>
-                    <button id="loginBtn" class="btn-primary py-2 px-5 text-xs">Engage Platform</button>
+                    <button id="loginBtn" class="btn-primary font-medium py-2 px-4 text-xs font-mono">Engage Platform</button>
                 </nav>
             </header>
-            <main class="container mx-auto px-6 relative">
-                <section class="min-h-screen flex items-center gap-8 pt-20">
-                    <div class="w-full lg:w-1/2 z-10">
+            <main class="container mx-auto px-6">
+                <section class="min-h-screen flex flex-col justify-center items-start pt-20">
+                    <div class="w-full lg:w-1/2">
                         <div class="text-left">
-                            <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight mb-4">
+                            <h1 class="text-3xl md:text-5xl font-bold text-white leading-tight mb-4 font-mono">
                                 <span class="text-scramble" data-text="AI-DRIVEN eDNA ANALYSIS"></span>
                                 <span class="blinking-cursor">_</span>
                             </h1>
-                            <p class="text-lg text-slate-600 mb-8 max-w-2xl">
+                            <p class="text-base text-gray-400 mb-8 max-w-lg">
                                 A high-throughput pipeline to classify eukaryotic taxa and assess deep-sea biodiversity directly from raw environmental DNA, bypassing the limitations of conventional reference databases.
                             </p>
-                            <a href="#problem" class="btn-primary py-3 px-8 text-sm">View Mission Brief</a>
+                            <a href="#problem" class="btn-primary font-semibold py-3 px-6 text-sm">View Mission Brief</a>
                         </div>
                     </div>
-                    <div class="w-1/2 hidden lg:flex justify-center items-center">
-                         <img src="https://images.unsplash.com/photo-1532187863486-abf9db5a92a2?q=80&w=1974&auto=format&fit=crop" 
-                              alt="Abstract DNA visualization representing data analysis" 
-                              class="rounded-xl object-cover w-full h-full max-h-[600px] shadow-2xl shadow-slate-300 reveal">
-                    </div>
                 </section>
-                <section id="problem">
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div class="card p-8 reveal" data-reveal><h3 class="text-xl font-bold text-slate-900 mb-4">Incomplete Databases</h3><p class="text-slate-600">Deep-sea organisms are critically underrepresented in genetic reference databases. This data void results in misclassification, unassigned reads, and a fundamental underestimation of true biodiversity.</p></div>
-                        <div class="card p-8 reveal" data-reveal style="transition-delay: 150ms"><h3 class="text-xl font-bold text-slate-900 mb-4">Computational Bottlenecks</h3><p class="text-slate-600">Legacy bioinformatic pipelines are computationally expensive and inefficient for novel discovery. Their reliance on sequence alignment against flawed databases is a primary limiting factor.</p></div>
-                    </div>
-                </section>
-                <section id="solution">
-                    <div class="card p-8 md:p-12 reveal" data-reveal>
-                       <p class="text-base text-slate-700 leading-relaxed">Our AI-driven pipeline leverages deep learning and unsupervised clustering to analyze eDNA without primary reliance on existing databases. The system is designed to:</p>
-                        <ul class="mt-8 space-y-6">
-                            <li class="flex items-start"><span class="text-sky-500 mr-4 mt-1 font-bold">[+]</span><span><strong class="text-slate-800 font-semibold">CLASSIFY TAXA DIRECTLY:</strong> A fine-tuned DNA-BERT transformer model interprets raw sequence data, enabling classification without perfect database matches.</span></li>
-                            <li class="flex items-start"><span class="text-sky-500 mr-4 mt-1 font-bold">[+]</span><span><strong class="text-slate-800 font-semibold">DISCOVER NOVEL SPECIES:</strong> Unsupervised clustering algorithms (DBSCAN, k-means) identify and group unknown sequences, flagging potential new taxa for targeted analysis.</span></li>
-                            <li class="flex items-start"><span class="text-sky-500 mr-4 mt-1 font-bold">[+]</span><span><strong class="text-slate-800 font-semibold">GENERATE ECOLOGICAL INSIGHTS:</strong> Rapidly produce accurate estimations of species abundance and community structure to inform conservation and research priorities.</span></li>
-                        </ul>
-                    </div>
-                </section>
-                <section id="tech">
-                    <div class="card p-8 flex justify-center items-center reveal" data-reveal>
-                       <p class="text-center text-slate-500 max-w-4xl font-mono text-xs leading-relaxed tracking-wider">SYSTEM INGESTS RAW eDNA DATA -> PREPROCESSING MODULE EXTRACTS 18S rRNA & COI MARKERS -> DATA IS VECTORIZED BY A FINE-TUNED DNA-BERT TRANSFORMER -> EMBEDDINGS ARE PROCESSED VIA DUAL PATHWAYS: [A] DEEP LEARNING FOR CLASSIFICATION, [B] UNSUPERVISED CLUSTERING FOR NOVELTY DETECTION -> OUTPUT GENERATION: TAXONOMIC GROUPING, ABUNDANCE ESTIMATION, ECOLOGICAL INSIGHTS.</p>
-                    </div>
-                </section>
+                 <section id="problem" class="py-24">
+                     <div data-reveal class="flex items-center gap-4 mb-12"><span class="section-title text-gray-500">01</span><span class="section-title">Problem Statement</span><div class="line"></div></div>
+                     <div class="grid md:grid-cols-2 gap-8">
+                         <div class="card p-8 reveal rounded-lg" data-reveal><h3 class="text-xl font-bold text-white mb-4">// Incomplete Databases</h3><p class="text-gray-400">Deep-sea organisms are critically underrepresented in genetic reference databases. This data void results in misclassification, unassigned reads, and a fundamental underestimation of true biodiversity.</p></div>
+                         <div class="card p-8 reveal rounded-lg" data-reveal style="transition-delay: 150ms"><h3 class="text-xl font-bold text-white mb-4">// Computational Bottlenecks</h3><p class="text-gray-400">Legacy bioinformatic pipelines are computationally expensive and inefficient for novel discovery. Their reliance on sequence alignment against flawed databases is a primary limiting factor.</p></div>
+                     </div>
+                 </section>
+                
+                 <section id="solution" class="py-24">
+                     <div data-reveal class="flex items-center gap-4 mb-12"><span class="section-title text-gray-500">02</span><span class="section-title">Proposed Solution</span><div class="line"></div></div>
+                     <div class="grid grid-cols-1 gap-8">
+                         <div class="card p-8 md:p-12 reveal rounded-lg" data-reveal>
+                            <p class="text-base text-gray-300 leading-relaxed">Our AI-driven pipeline leverages deep learning and unsupervised clustering to analyze eDNA without primary reliance on existing databases. The system is designed to:</p>
+                             <ul class="mt-8 space-y-6 text-sm">
+                                 <li class="flex items-start"><span class="text-white mr-4 mt-1 font-mono">[+]</span><span><strong class="text-white font-semibold">CLASSIFY TAXA DIRECTLY:</strong> A fine-tuned DNA-BERT transformer model interprets raw sequence data, enabling classification without perfect database matches.</span></li>
+                                 <li class="flex items-start"><span class="text-white mr-4 mt-1 font-mono">[+]</span><span><strong class="text-white font-semibold">DISCOVER NOVEL SPECIES:</strong> Unsupervised clustering algorithms (DBSCAN, k-means) identify and group unknown sequences, flagging potential new taxa for targeted analysis.</span></li>
+                                  <li class="flex items-start"><span class="text-white mr-4 mt-1 font-mono">[+]</span><span><strong class="text-white font-semibold">GENERATE ECOLOGICAL INSIGHTS:</strong> Rapidly produce accurate estimations of species abundance and community structure to inform conservation and research priorities.</span></li>
+                             </ul>
+                         </div>
+                     </div>
+                 </section>
+
+                 <section id="tech" class="py-24">
+                     <div data-reveal class="flex items-center gap-4 mb-12"><span class="section-title text-gray-500">03</span><span class="section-title">System Architecture</span><div class="line"></div></div>
+                     <div class="card p-8 flex justify-center items-center reveal rounded-lg" data-reveal>
+                        <p class="text-center text-gray-400 max-w-4xl text-sm font-mono">SYSTEM INGESTS RAW eDNA DATA -> PREPROCESSING MODULE EXTRACTS 18S rRNA & COI MARKERS -> DATA IS VECTORIZED BY A FINE-TUNED DNA-BERT TRANSFORMER -> EMBEDDINGS ARE PROCESSED VIA DUAL PATHWAYS: [A] DEEP LEARNING FOR CLASSIFICATION, [B] UNSUPERVISED CLUSTERING FOR NOVELTY DETECTION -> OUTPUT GENERATION: TAXONOMIC GROUPING, ABUNDANCE ESTIMATION, ECOLOGICAL INSIGHTS.</p>
+                     </div>
+                 </section>
                  <div class="h-24"></div>
             </main>
         </div>
 
-        <!-- LOGIN PAGE -->
         <div id="loginPage" class="hidden min-h-screen flex items-center justify-center p-4">
-             <div class="w-full max-w-sm">
-                   <div class="card p-8 space-y-6">
-                       <h2 class="text-lg font-bold text-center text-slate-800 tracking-widest">// AUTHENTICATION</h2>
-                       <div>
-                           <div class="flex border border-slate-300 rounded-md overflow-hidden"><button id="userToggle" class="w-1/2 py-2 text-sm font-medium bg-slate-800 text-white">USER</button><button id="adminToggle" class="w-1/2 py-2 text-sm font-medium text-slate-500">ADMIN</button></div>
+               <div class="w-full max-w-sm">
+                       <div class="card p-8 space-y-6 border border-[#27272a] rounded-lg">
+                           <h2 class="text-lg font-bold text-center text-white tracking-widest font-mono">// AUTHENTICATION REQUIRED</h2>
+                           <div>
+                               <div class="flex border border-[#27272a] rounded-md overflow-hidden"><button id="userToggle" class="w-1/2 py-2 text-sm font-medium bg-white text-black">USER</button><button id="adminToggle" class="w-1/2 py-2 text-sm font-medium text-gray-400">ADMIN</button></div>
+                           </div>
+                           <form id="loginForm" class="space-y-4">
+                               <div><label for="email" class="text-xs font-medium text-gray-400 font-mono">EMAIL_ADDR</label><input type="email" id="email" class="w-full mt-1 p-3 bg-black border border-[#27272a] rounded-md focus:ring-1 focus:ring-white focus:border-white outline-none text-sm" value="user@cmlre.gov"></div>
+                               <div><label for="password" class="text-xs font-medium text-gray-400 font-mono">PASSWORD</label><input type="password" id="password" class="w-full mt-1 p-3 bg-black border border-[#27272a] rounded-md focus:ring-1 focus:ring-white focus:border-white outline-none" value="password"></div>
+                               <button type="submit" class="w-full btn-primary font-bold py-3 px-4 text-xs rounded-md">EXECUTE LOGIN</button>
+                           </form>
                        </div>
-                       <form id="loginForm" class="space-y-4">
-                           <div><label for="email" class="text-xs font-medium text-slate-500 font-mono">EMAIL_ADDR</label><input type="email" id="email" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-sm text-slate-800" value="user@cmlre.gov"></div>
-                           <div><label for="password" class="text-xs font-medium text-slate-500 font-mono">PASSWORD</label><input type="password" id="password" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 focus:border-sky-500 outline-none text-slate-800" value="password"></div>
-                           <button type="submit" class="w-full btn-primary font-bold py-3 px-4 text-xs">Execute Login</button>
-                       </form>
-                   </div>
-             </div>
+               </div>
         </div>
 
-        <!-- DASHBOARD PAGE -->
         <div id="dashboardPage" class="hidden min-h-screen container mx-auto px-6 py-24">
-            <div class="flex justify-between items-center mb-8 border-b border-slate-200 pb-4">
-                <h1 class="text-2xl font-bold text-slate-900 tracking-wider">Analysis Dashboard</h1>
-                <button id="logoutBtn" class="text-slate-500 hover:text-sky-500 transition text-xs uppercase font-semibold">Logout</button>
+            <div class="flex justify-between items-center mb-8 border-b border-[#27272a] pb-4">
+                <h1 class="text-xl font-bold text-white tracking-widest font-mono">// ANALYSIS DASHBOARD</h1>
+                <button id="logoutBtn" class="text-gray-400 hover:text-white transition text-xs uppercase font-mono">LOGOUT</button>
             </div>
 
-            <!-- Analysis Input Sections -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                <!-- Single Sequence Analysis -->
-                <div class="card p-6">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4">Single Sequence Analysis</h2>
-                    <textarea id="dnaSequenceInput" rows="4" class="w-full p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 outline-none text-sm font-mono" placeholder="> Paste raw eDNA sequence here..."></textarea>
+                <div class="card p-6 border border-[#27272a] rounded-lg">
+                    <h2 class="text-lg font-semibold text-white mb-4 font-mono">// SINGLE SEQUENCE ANALYSIS</h2>
+                    <textarea id="dnaSequenceInput" rows="4" class="w-full p-3 bg-black border border-[#27272a] rounded-md focus:ring-1 focus:ring-white outline-none text-sm font-mono" placeholder="> Paste raw eDNA sequence here..."></textarea>
                     <div class="mt-4 text-right">
-                        <button id="analyzeBtn" class="btn-primary py-2 px-6 text-xs">Analyze</button>
+                        <button id="analyzeBtn" class="btn-primary font-bold py-2 px-5 text-xs rounded-md">INITIATE ANALYSIS</button>
                     </div>
                 </div>
-                <!-- Batch Analysis -->
-                <div class="card p-6">
-                    <h2 class="text-lg font-bold text-slate-800 mb-4">Batch Analysis (CSV)</h2>
-                    <p class="text-xs text-slate-500 mb-4">Upload a CSV file with 'sample_id' and 'sequence' columns.</p>
+                <div class="card p-6 border border-[#27272a] rounded-lg">
+                    <h2 class="text-lg font-semibold text-white mb-4 font-mono">// BATCH ANALYSIS (CSV)</h2>
+                    <p class="text-xs text-gray-400 mb-4">Upload a CSV file with 'sample_id' and 'sequence' columns.</p>
                     <input type="file" id="csvFileInput" class="hidden" accept=".csv">
-                    <button id="csvUploadBtn" class="w-full border border-dashed border-slate-300 hover:border-sky-500 transition py-4 text-slate-500 text-sm rounded-md hover:text-sky-600 bg-slate-50/50">
+                    <button id="csvUploadBtn" class="w-full border border-dashed border-[#27272a] hover:border-white transition py-4 text-gray-400 text-sm rounded-md">
                         CLICK TO UPLOAD CSV FILE
                     </button>
-                    
-                    <!-- Metadata Inputs -->
+                   
                     <div class="mt-4 space-y-3">
                         <div>
-                            <label for="environmentType" class="text-xs font-medium text-slate-500">ENVIRONMENT TYPE</label>
-                            <input type="text" id="environmentType" placeholder="e.g. Hydrothermal Vent" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 outline-none text-sm">
+                            <label for="environmentType" class="text-xs font-medium text-gray-400 font-mono">ENVIRONMENT TYPE</label>
+                            <input type="text" id="environmentType" placeholder="e.g. Hydrothermal Vent" class="w-full mt-1 p-3 bg-black border border-[#27272a] rounded-md focus:ring-1 focus:ring-white focus:border-white outline-none text-sm">
                         </div>
                         <div>
-                            <label for="batchDepth" class="text-xs font-medium text-slate-500">DEPTH (meters)</label>
-                            <input type="number" id="batchDepth" step="1" placeholder="e.g. 2500" class="w-full mt-1 p-3 bg-slate-50 border border-slate-300 rounded-md focus:ring-2 focus:ring-sky-500 outline-none text-sm">
+                            <label for="batchDepth" class="text-xs font-medium text-gray-400 font-mono">DEPTH (meters)</label>
+                            <input type="number" id="batchDepth" step="1" placeholder="e.g. 2500" class="w-full mt-1 p-3 bg-black border border-[#27272a] rounded-md focus:ring-1 focus:ring-white focus:border-white outline-none text-sm">
                         </div>
                     </div>
-                    
+                   
                     <div class="mt-4 text-right">
-                        <button id="batchAnalyzeBtn" class="btn-primary py-2 px-6 text-xs" disabled>Analyze Batch</button>
+                        <button id="batchAnalyzeBtn" class="btn-primary font-bold py-2 px-5 text-xs rounded-md" disabled>ANALYZE BATCH</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Results Section -->
             <div id="resultsSection" class="hidden">
-                 <div class="mb-8 card p-4">
-                     <h3 class="text-lg font-semibold text-slate-800 mb-4">Pipeline Status</h3>
+                 <div class="mb-8 card border border-[#27272a] p-4 rounded-lg">
+                     <h3 class="text-lg font-semibold text-white mb-4 font-mono">// PIPELINE STATUS</h3>
                      <div id="pipelineStatus" class="text-xs font-mono"></div>
                  </div>
 
-                 <!-- NEW: Gene Marker Results Card -->
-                 <div id="markerResultsCard" class="hidden mb-8 card p-6">
-                     <h3 class="text-lg font-semibold text-slate-800 mb-4">Gene Marker Detection</h3>
+                 <div id="markerResultsCard" class="hidden mb-8 card border border-[#27272a] p-6 rounded-lg">
+                     <h3 class="text-lg font-semibold text-white mb-4 font-mono">// GENE MARKER DETECTION</h3>
                      <div id="markerResultsContent"></div>
                  </div>
 
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div class="lg:col-span-2 space-y-8">
-                        <!-- ECOLOGICAL INSIGHTS SECTION -->
-                        <div id="insightsCard" class="card p-6">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-lg font-bold text-slate-800">Ecological Insights Report</h3>
-                                <button id="downloadReportBtn" class="hidden btn-primary py-2 px-5 text-xs">Download Report</button>
-                            </div>
+                        <div id="insightsCard" class="card p-6 border border-[#27272a] rounded-lg">
+                             <div class="flex justify-between items-center flex-wrap gap-2 mb-4">
+                                 <h3 class="text-lg font-semibold text-white font-mono">// ECOLOGICAL INSIGHTS REPORT</h3>
+                                 <div class="flex items-center gap-2">
+                                     <button id="chatBtn" class="hidden btn-secondary font-bold py-2 px-5 text-xs rounded-md">Chat with AI</button>
+                                     <button id="generateReportBtn" class="hidden btn-primary font-bold py-2 px-5 text-xs rounded-md">Generate Report</button>
+                                 </div>
+                             </div>
                             <div id="insightsResult" class="space-y-6 text-sm">
-                                <p class="text-slate-500">Ecological insights will be generated after batch analysis is complete.</p>
+                                <p class="text-gray-500">Ecological insights will be generated after batch analysis is complete.</p>
                             </div>
                         </div>
 
-                        <div class="card p-6">
-                            <h3 class="text-lg font-bold text-slate-800 mb-4">Taxonomic Classification</h3>
+                        <div class="card p-6 border border-[#27272a] rounded-lg">
+                            <h3 class="text-lg font-semibold text-white mb-4 font-mono">// TAXONOMIC CLASSIFICATION</h3>
                             <div id="classificationResult" class="space-y-3 text-sm">
-                                <p class="text-slate-500">Results will be summarized in the abundance chart. Single sequence analysis results will appear here.</p>
+                                <p class="text-gray-500">Results will be summarized in the abundance chart. Single sequence analysis results will appear here.</p>
                             </div>
                         </div>
                     </div>
                     <div class="space-y-8">
-                        <div class="card p-6">
-                            <h3 class="text-lg font-bold text-slate-800 mb-4">Taxa Abundance</h3>
+                        <div class="card p-6 border border-[#27272a] rounded-lg">
+                            <h3 class="text-lg font-semibold text-white mb-4 font-mono">// TAXA ABUNDANCE</h3>
                             <canvas id="abundanceChart"></canvas>
                         </div>
-                        <div class="card p-6">
-                            <h3 class="text-lg font-bold text-slate-800 mb-4">Novelty Detection</h3>
-                            <div id="noveltyResult" class="text-sm p-4 bg-slate-100 border border-slate-200 rounded-md text-slate-700"></div>
+                        <div class="card p-6 border border-[#27272a] rounded-lg">
+                            <h3 class="text-lg font-semibold text-white mb-4 font-mono">// NOVELTY DETECTION</h3>
+                            <div id="noveltyResult" class="text-sm p-4 bg-black border border-[#27272a] rounded-md"></div>
                         </div>
                     </div>
                 </div>
@@ -263,32 +287,153 @@
              <div class="h-24"></div>
         </div>
     </div>
-    
+   
+    <div id="reportModal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div class="card w-full max-w-md p-6 text-center border border-[#27272a] rounded-lg">
+             <h2 class="text-lg font-bold text-white mb-4 font-mono">// Select Report Type</h2>
+             <p class="text-sm text-gray-400 mb-6">Choose the type of report you would like to generate and download.</p>
+             <div id="modal-loader" class="hidden mb-4">
+                 <div class="flex justify-center items-center space-x-2">
+                     <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                     <span class="text-sm text-gray-400">Generating detailed report... this may take a moment.</span>
+                 </div>
+             </div>
+             <div id="modal-buttons" class="space-y-4">
+                 <button id="downloadSummaryReportBtn" class="w-full btn-primary font-bold py-3 text-sm rounded-md">Download Summary Report</button>
+                 <button id="downloadDetailedReportBtn" class="w-full btn-secondary font-bold py-3 text-sm rounded-md">Download Detailed Report</button>
+             </div>
+             <button id="closeModalBtn" class="mt-6 text-sm text-gray-500 hover:text-white">Cancel</button>
+        </div>
+    </div>
+   
+    <div id="chatbot-container" class="hidden fixed bottom-5 right-5 w-full max-w-sm h-[600px] z-[100] flex flex-col card p-0 overflow-hidden shadow-2xl border border-[#27272a] rounded-lg">
+        <div class="flex justify-between items-center p-4 border-b border-[#27272a] bg-black/80">
+            <h3 class="font-bold text-white font-mono">// AI Ecologist Assistant</h3>
+            <button id="closeChatbotBtn" class="text-gray-500 hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+        </div>
+        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-black">
+            </div>
+        <div class="p-4 border-t border-[#27272a] bg-black/80">
+            <form id="chat-form" class="flex items-center gap-2">
+                <input type="text" id="chat-input" class="w-full p-3 bg-black border border-[#27272a] rounded-md focus:ring-1 focus:ring-white outline-none text-sm" placeholder="Ask about the insights...">
+                <button type="submit" class="btn-primary p-3 rounded-md shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.707l-3-3a1 1 0 00-1.414 1.414L10.586 9H7a1 1 0 100 2h3.586l-1.293 1.293a1 1 0 101.414 1.414l3-3a1 1 0 000-1.414z" clip-rule="evenodd" /></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <script type="module">
+        // Note: Three.js import is no longer needed
+        // import * as THREE from 'three';
+
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // --- Section Title Creation ---
-            const createSectionTitle = (n, t) => `<div data-reveal class="flex items-center gap-4 py-24"><span class="section-title text-slate-400">${n}</span><span class="section-title">${t}</span><div class="line"></div></div>`;
-            
-            const problemSection = document.getElementById('problem');
-            if (problemSection) {
-                const title = createSectionTitle('01', 'Problem Statement');
-                const content = problemSection.innerHTML;
-                problemSection.innerHTML = title + content;
+
+            // --- Background 3D DNA Model (Three.js) ---
+            // This entire section has been commented out as it is replaced by the Spline model
+            /*
+            const bgCanvas = document.getElementById('bg-dna-canvas');
+            if (bgCanvas) {
+                const scene = new THREE.Scene();
+                scene.fog = new THREE.Fog(0x000000, 10, 40);
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ canvas: bgCanvas, alpha: true, antialias: true });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+               
+                const ambientLight = new THREE.AmbientLight(0x40a0ff, 0.5);
+                scene.add(ambientLight);
+                const directionalLight = new THREE.DirectionalLight(0x80c0ff, 1);
+                directionalLight.position.set(5, 5, 5);
+                scene.add(directionalLight);
+               
+                const group = new THREE.Group();
+                group.rotation.x = Math.PI / 8;
+                group.rotation.y = -Math.PI / 4;
+               
+                const helixRadius = 3;
+                const helixHeight = 40;
+                const turnCount = 10;
+                const basePairs = 150;
+                const baseColors = [0x00aaff, 0x0088cc, 0x006699];
+
+                const createStrand = () => {
+                    const curve = new THREE.CatmullRomCurve3(
+                        Array.from({ length: 200 }, (_, i) => {
+                            const t = (i / 199) * helixHeight;
+                            return new THREE.Vector3(
+                                helixRadius * Math.cos(t * turnCount * Math.PI / helixHeight),
+                                t - helixHeight / 2,
+                                helixRadius * Math.sin(t * turnCount * Math.PI / helixHeight)
+                            );
+                        })
+                    );
+                    const geometry = new THREE.TubeGeometry(curve, 100, 0.15, 12, false);
+                    const material = new THREE.MeshPhongMaterial({ color: 0x0055aa, shininess: 30 });
+                    return new THREE.Mesh(geometry, material);
+                };
+
+                const strand1 = createStrand();
+                const strand2 = createStrand();
+                strand2.rotation.y = Math.PI;
+                group.add(strand1, strand2);
+
+                for (let i = 0; i < basePairs; i++) {
+                    const t = (i / (basePairs - 1)) * helixHeight;
+                    const y = t - helixHeight / 2;
+                    const angle = t * turnCount * Math.PI / helixHeight;
+                    const start = new THREE.Vector3(helixRadius * Math.cos(angle), y, helixRadius * Math.sin(angle));
+                    const end = new THREE.Vector3(helixRadius * Math.cos(angle + Math.PI), y, helixRadius * Math.sin(angle + Math.PI));
+                    const distance = start.distanceTo(end);
+                    const position = start.clone().add(end).divideScalar(2);
+                    const cylinderGeometry = new THREE.CylinderGeometry(0.08, 0.08, distance, 8);
+                    const cylinderMaterial = new THREE.MeshPhongMaterial({
+                        color: baseColors[i % baseColors.length],
+                        emissive: baseColors[i % baseColors.length],
+                        emissiveIntensity: 0.3
+                    });
+                    const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+                    cylinder.position.copy(position);
+                    cylinder.lookAt(end);
+                    cylinder.rotateX(Math.PI / 2);
+                    group.add(cylinder);
+                }
+                scene.add(group);
+
+                const initialCameraZ = 40;
+                const finalCameraZ = 5;
+                camera.position.z = initialCameraZ;
+
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    group.rotation.y += 0.0005;
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                function handleScrollAnimation() {
+                    const scrollY = window.scrollY;
+                    const animationScrollHeight = window.innerHeight;
+                    const scrollFraction = Math.min(scrollY / animationScrollHeight, 1);
+                    const easedFraction = 1 - Math.pow(1 - scrollFraction, 3);
+                    camera.position.z = THREE.MathUtils.lerp(initialCameraZ, finalCameraZ, easedFraction);
+                    camera.position.y = THREE.MathUtils.lerp(0, helixHeight / 4, easedFraction);
+                    group.rotation.y = THREE.MathUtils.lerp(-Math.PI / 4, Math.PI, easedFraction);
+                    group.rotation.x = THREE.MathUtils.lerp(Math.PI / 8, -Math.PI / 16, easedFraction);
+                }
+                window.addEventListener('scroll', handleScrollAnimation, { passive: true });
+               
+                window.addEventListener('resize', () => {
+                    const newWidth = window.innerWidth;
+                    const newHeight = window.innerHeight;
+                    camera.aspect = newWidth / newHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(newWidth, newHeight);
+                });
             }
-            const solutionSection = document.getElementById('solution');
-            if (solutionSection) {
-                const title = createSectionTitle('02', 'Proposed Solution');
-                const content = solutionSection.innerHTML;
-                solutionSection.innerHTML = title + content;
-            }
-            const techSection = document.getElementById('tech');
-            if (techSection) {
-                const title = createSectionTitle('03', 'System Architecture');
-                const content = techSection.innerHTML;
-                techSection.innerHTML = title + content;
-            }
-            
+            */
+
             // --- Text Scramble Effect ---
             class TextScrambleEffect {
                 constructor(el) { this.el = el; this.chars = '!<>-_\\/[]{}—=+*^?#________'; this.update = this.update.bind(this); }
@@ -320,7 +465,7 @@
                 }
                 randomChar() { return this.chars[Math.floor(Math.random() * this.chars.length)]; }
             }
-            
+           
             const scrambleElements = document.querySelectorAll('.text-scramble');
             scrambleElements.forEach(el => {
                 const fx = new TextScrambleEffect(el); const originalText = el.dataset.text;
@@ -353,7 +498,7 @@
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const email = document.getElementById('email').value;
-                const isAdminActive = adminToggle.classList.contains('bg-slate-800');
+                const isAdminActive = adminToggle.classList.contains('bg-white');
 
                 if (isAdminActive) {
                     window.location.href = './admin.html'; 
@@ -367,12 +512,16 @@
                 homePage.style.display = 'block';
                 document.getElementById('resultsSection').classList.add('hidden');
                 document.getElementById('dnaSequenceInput').value = '';
+                // Hide chat elements on logout
+                chatBtn.classList.add('hidden');
+                chatbotContainer.classList.add('hidden');
+                chatMessages.innerHTML = '';
             });
             const setToggle = (active, inactive) => {
-                 active.classList.add('bg-slate-800', 'text-white'); 
-                 active.classList.remove('text-slate-500');
-                 inactive.classList.remove('bg-slate-800', 'text-white'); 
-                 inactive.classList.add('text-slate-500');
+                 active.classList.add('bg-white', 'text-black'); 
+                 active.classList.remove('text-gray-400');
+                 inactive.classList.remove('bg-white', 'text-black'); 
+                 inactive.classList.add('text-gray-400');
             };
             userToggle.addEventListener('click', () => setToggle(userToggle, adminToggle));
             adminToggle.addEventListener('click', () => setToggle(adminToggle, userToggle));
@@ -384,7 +533,7 @@
             const batchAnalyzeBtn = document.getElementById('batchAnalyzeBtn');
             const csvFileInput = document.getElementById('csvFileInput');
             const csvUploadBtn = document.getElementById('csvUploadBtn');
-            
+           
             const resultsSection = document.getElementById('resultsSection');
             const pipelineStatusEl = document.getElementById('pipelineStatus');
             const markerResultsCard = document.getElementById('markerResultsCard');
@@ -392,13 +541,28 @@
             const classificationResultEl = document.getElementById('classificationResult');
             const noveltyResultEl = document.getElementById('noveltyResult');
             const insightsResultEl = document.getElementById('insightsResult');
-            const analyzeButtonText = 'Analyze';
-            const downloadReportBtn = document.getElementById('downloadReportBtn');
-            
+            const analyzeButtonText = 'INITIATE ANALYSIS';
+            const generateReportBtn = document.getElementById('generateReportBtn');
+            const reportModal = document.getElementById('reportModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+            const downloadSummaryReportBtn = document.getElementById('downloadSummaryReportBtn');
+            const downloadDetailedReportBtn = document.getElementById('downloadDetailedReportBtn');
+            const modalLoader = document.getElementById('modal-loader');
+            const modalButtons = document.getElementById('modal-buttons');
+
+            // --- Chatbot elements ---
+            const chatBtn = document.getElementById('chatBtn');
+            const chatbotContainer = document.getElementById('chatbot-container');
+            const closeChatbotBtn = document.getElementById('closeChatbotBtn');
+            const chatForm = document.getElementById('chat-form');
+            const chatInput = document.getElementById('chat-input');
+            const chatMessages = document.getElementById('chat-messages');
+           
             const GENE_MARKER_API_URL = "https://gene-marker-api-894435700020.us-central1.run.app";
             const DNABERT_API_ENDPOINT = 'https://dnabert-classifier-83913461974.asia-south2.run.app/predict';
             let parsedCsvData = [];
-            let currentInsightsData = null; // To store the latest insights for PDF generation
+            let currentInsightsData = null; 
+            let detailedReportData = [];
 
             analyzeBtn.addEventListener('click', async () => {
                 const dnaInput = document.getElementById('dnaSequenceInput');
@@ -443,52 +607,69 @@
                     reader.readAsText(file);
                 }
             });
-            
+           
             batchAnalyzeBtn.addEventListener('click', async () => {
                 if (parsedCsvData.length === 0) return;
                 resultsSection.classList.remove('hidden');
                 let allTaxaResults = [];
+                detailedReportData = [];
                 batchAnalyzeBtn.disabled = true;
                 analyzeBtn.disabled = true;
 
                 pipelineStatusEl.innerHTML = `
                     <div class="flex items-center justify-between"><span>[1/3] Detecting gene markers...</span><span id="batchProgressText">0 / ${parsedCsvData.length}</span></div>
-                    <div class="w-full bg-slate-200 h-1 mt-2 rounded-full overflow-hidden"><div id="batchProgressBar" class="bg-sky-500 h-1" style="width: 0%"></div></div>`;
+                    <div class="w-full bg-[#27272a] h-1 mt-2 rounded-full overflow-hidden"><div id="batchProgressBar" class="bg-white h-1" style="width: 0%; transition: width 0.3s ease-in-out;"></div></div>`;
+               
                 let foundMarkers = [];
-                for (let i = 0; i < parsedCsvData.length; i++) {
-                    const item = parsedCsvData[i];
+                for (const [index, item] of parsedCsvData.entries()) {
                     try {
-                        const markerData = await callGeneMarkerApi(item.sequence);
-                        const markers = filterRelevantMarkers(markerData.predictions || []);
-                        markers.forEach(marker => foundMarkers.push({ original_sample_id: item.sample_id, marker_label: marker.label, marker_sequence: marker.sequence }));
-                    } catch (error) { console.error(`Marker detection failed for sample ${item.sample_id}:`, error); }
-                    const progress = ((i + 1) / parsedCsvData.length) * 100;
+                         const markerData = await callGeneMarkerApi(item.sequence);
+                         const markers = filterRelevantMarkers(markerData.predictions || []);
+                         markers.forEach(marker => foundMarkers.push({ original_sample_id: item.sample_id, marker_label: marker.label, marker_sequence: marker.sequence }));
+                    } catch(e) {
+                         console.error(`Marker detection API failed for ${item.sample_id}`, e);
+                    }
+                    const progress = ((index + 1) / parsedCsvData.length) * 100;
                     document.getElementById('batchProgressBar').style.width = `${progress}%`;
-                    document.getElementById('batchProgressText').textContent = `${i + 1} / ${parsedCsvData.length}`;
+                    document.getElementById('batchProgressText').textContent = `${index + 1} / ${parsedCsvData.length}`;
                 }
 
-                pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[1/3] Marker detection complete. Found ${foundMarkers.length} markers.</span>`;
+
+                pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[1/3] Marker detection complete. Found ${foundMarkers.length} markers.</span>`;
                 pipelineStatusEl.innerHTML += `
                     <div class="flex items-center justify-between mt-2"><span>[2/3] Classifying taxa...</span><span id="taxaProgressText">0 / ${foundMarkers.length}</span></div>
-                    <div class="w-full bg-slate-200 h-1 mt-2 rounded-full overflow-hidden"><div id="taxaProgressBar" class="bg-sky-500 h-1" style="width: 0%"></div></div>`;
-                for (let i = 0; i < foundMarkers.length; i++) {
-                    const marker = foundMarkers[i];
-                    try {
-                        const result = await callDnabertApi(marker.marker_sequence);
-                        allTaxaResults.push(result);
-                    } catch (error) {
-                        console.error(`Taxa classification failed for a marker from ${marker.original_sample_id}:`, error);
-                        allTaxaResults.push({ predicted_taxa: "ERROR", predicted_group: "ERROR", novelty_status: "ERROR", taxa_confidence: 0, group_confidence: 0 });
+                    <div class="w-full bg-[#27272a] h-1 mt-2 rounded-full overflow-hidden"><div id="taxaProgressBar" class="bg-white h-1" style="width: 0%; transition: width 0.3s ease-in-out;"></div></div>`;
+               
+                 for (const [index, marker] of foundMarkers.entries()) {
+                     try {
+                         const result = await callDnabertApi(marker.marker_sequence);
+                          allTaxaResults.push({...result, original_sample_id: marker.original_sample_id, marker_label: marker.marker_label });
+                     } catch(e) {
+                         console.error(`Classification API failed for ${marker.original_sample_id}`, e);
+                         allTaxaResults.push({ predicted_taxa: "ERROR", predicted_group: "ERROR", original_sample_id: marker.original_sample_id, marker_label: marker.marker_label });
+                     }
+                      const progress = ((index + 1) / foundMarkers.length) * 100;
+                      document.getElementById('taxaProgressBar').style.width = `${progress}%`;
+                      document.getElementById('taxaProgressText').textContent = `${index + 1} / ${foundMarkers.length}`;
+                 }
+               
+                detailedReportData = parsedCsvData.map(originalSample => {
+                    const classificationResult = allTaxaResults.find(res => res.original_sample_id === originalSample.sample_id);
+                    if (classificationResult) {
+                        return {
+                            id: originalSample.sample_id,
+                            gene: classificationResult.marker_label,
+                            taxa: classificationResult.predicted_taxa,
+                        };
+                    } else {
+                        return { id: originalSample.sample_id, gene: 'Not Detected', taxa: 'N/A' };
                     }
-                    const progress = ((i + 1) / foundMarkers.length) * 100;
-                    document.getElementById('taxaProgressBar').style.width = `${progress}%`;
-                    document.getElementById('taxaProgressText').textContent = `${i + 1} / ${foundMarkers.length}`;
-                }
+                });
 
-                pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[2/3] Classification complete.</span>`;
+                pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[2/3] Classification complete.</span>`;
                 updateAbundanceChart(allTaxaResults);
                 const novelCount = allTaxaResults.filter(r => r.novelty_status && r.novelty_status.includes('Potentially Novel')).length;
-                noveltyResultEl.innerHTML = `<span class="text-2xl font-bold text-slate-800">${novelCount}</span> <span class="text-slate-500">of ${allTaxaResults.length} sequences flagged as potentially novel.</span>`;
+                noveltyResultEl.innerHTML = `<span class="text-2xl font-bold text-white">${novelCount}</span> <span class="text-gray-400">of ${allTaxaResults.length} sequences flagged as potentially novel.</span>`;
                 await generateAndDisplayInsights(allTaxaResults);
                 batchAnalyzeBtn.disabled = false;
                 analyzeBtn.disabled = false;
@@ -496,37 +677,37 @@
 
             async function performSingleAnalysis(rawSequence) {
                 resultsSection.classList.remove('hidden');
-                classificationResultEl.innerHTML = '<p class="text-slate-500">Awaiting classification results...</p>';
+                classificationResultEl.innerHTML = '<p class="text-gray-500">Awaiting classification results...</p>';
                 markerResultsCard.classList.add('hidden');
                 markerResultsContent.innerHTML = '';
                 analyzeBtn.disabled = true;
                 analyzeBtn.textContent = 'Analyzing...';
                 try {
-                    pipelineStatusEl.innerHTML = '<span class="text-yellow-600">[1/2] Detecting gene markers (COI/18sRNA)...</span>';
+                    pipelineStatusEl.innerHTML = '<span class="text-yellow-400">[1/2] Detecting gene markers (COI/18sRNA)...</span>';
                     const sequence = rawSequence.replace(/>.*/g, '').replace(/\s/g, '').toUpperCase();
                     if (!/^[ATCGN]+$/.test(sequence)) throw new Error("Input contains invalid characters. Only A, T, G, C, and N are allowed.");
                     const markerData = await callGeneMarkerApi(sequence);
                     const markers = filterRelevantMarkers(markerData.predictions || []);
                     if (markers.length === 0) throw new Error("No relevant gene markers (COI or 18sRNA) were detected.");
-                    
+                   
                     markerResultsCard.classList.remove('hidden');
-                    let markerHTML = `<p class="text-sm text-slate-600 mb-4">Detected ${markers.length} relevant marker(s):</p>`;
+                    let markerHTML = `<p class="text-sm text-gray-300 mb-4">Detected ${markers.length} relevant marker(s):</p>`;
                     markers.forEach(marker => {
-                        markerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-md mb-2"><p class="font-semibold text-slate-800">${marker.label}</p><p class="text-xs text-slate-500 break-all mt-1 font-mono">${marker.sequence.substring(0, 100)}...</p></div>`;
+                        markerHTML += `<div class="p-3 bg-black border border-[#27272a] rounded-md mb-2"><p class="font-semibold text-white">${marker.label}</p><p class="text-xs text-gray-400 break-all mt-1 font-mono">${marker.sequence.substring(0, 100)}...</p></div>`;
                     });
                     markerResultsContent.innerHTML = markerHTML;
-                    pipelineStatusEl.innerHTML = `<span class="text-green-600">[1/2] Marker detection complete.</span>`;
-                    
-                    pipelineStatusEl.innerHTML += '<br><span class="text-yellow-600">[2/2] Classifying detected marker(s)...</span>';
+                    pipelineStatusEl.innerHTML = `<span class="text-green-400">[1/2] Marker detection complete.</span>`;
+                   
+                    pipelineStatusEl.innerHTML += '<br><span class="text-yellow-400">[2/2] Classifying detected marker(s)...</span>';
                     classificationResultEl.innerHTML = '';
                     for (const marker of markers) {
                         const taxaData = await callDnabertApi(marker.sequence);
                         populateSingleResult(taxaData, marker.label);
                     }
-                    pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[2/2] Classification complete. [OK]</span>`;
+                    pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[2/2] Classification complete. [OK]</span>`;
                 } catch (error) {
                     console.error('Analysis Failed:', error);
-                    pipelineStatusEl.innerHTML = `<div class="text-red-600 p-2 border border-red-500/50 bg-red-500/10 rounded-md"><b>Error:</b> ${error.message}</div>`;
+                    pipelineStatusEl.innerHTML = `<div class="text-red-500 p-2 border border-red-500/50 bg-red-500/10 rounded-md"><b>Error:</b> ${error.message}</div>`;
                     populateSingleResult(null);
                 } finally {
                     analyzeBtn.disabled = false;
@@ -553,7 +734,7 @@
                 if (best18sRNA) return [best18sRNA];
                 return [];
             }
-            
+           
             async function callDnabertApi(sequence) {
                 const response = await fetch(DNABERT_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sequence }) });
                 if (!response.ok) throw new Error(`Bio-Line API Error (${response.status}): ${await response.text()}`);
@@ -561,18 +742,18 @@
                 if (result && result.taxa_confidence < 0.75) result.novelty_status = `Potentially Novel (Confidence < 75%)`;
                 return result;
             }
-            
+           
             async function generateAndDisplayInsights(results) {
-                 pipelineStatusEl.innerHTML += '<br><span class="text-yellow-600">[3/3] Generating ecological insights...</span>';
-                 insightsResultEl.innerHTML = '<p class="text-slate-500">Communicating with Gemini API...</p>';
-                 const apiKey = "AIzaSyABQw87mIPRP56tYS1GXMk_eedpj6lIyBs";
+                 pipelineStatusEl.innerHTML += '<br><span class="text-yellow-400">[3/3] Generating ecological insights...</span>';
+                 insightsResultEl.innerHTML = '<p class="text-gray-500">Communicating with Gemini API...</p>';
+                 const apiKey = "AIzaSyABQw87mIPRP56tYS1GXMk_eedpj6lIyBs"; // Replace with your actual key if needed
                  const counts = results.reduce((acc, result) => {
-                     if (result.predicted_taxa === "ERROR") return acc;
-                     const taxa = result.predicted_taxa || "Unknown";
-                     if (!acc[taxa]) acc[taxa] = { count: 0, totalConfidence: 0, group: result.predicted_group };
-                     acc[taxa].count++;
-                     acc[taxa].totalConfidence += result.taxa_confidence;
-                     return acc;
+                      if (result.predicted_taxa === "ERROR") return acc;
+                      const taxa = result.predicted_taxa || "Unknown";
+                      if (!acc[taxa]) acc[taxa] = { count: 0, totalConfidence: 0, group: result.predicted_group };
+                      acc[taxa].count++;
+                      acc[taxa].totalConfidence += result.taxa_confidence;
+                      return acc;
                  }, {});
                  const aggregatedData = Object.entries(counts).map(([taxa, data]) => ({ taxon: taxa, group: data.group, abundance: data.count, avg_confidence: parseFloat((data.totalConfidence / data.count).toFixed(2)) }));
                  const sampleId = "BatchAnalysis-" + new Date().toISOString().slice(0,10);
@@ -580,45 +761,46 @@
                  const depth = document.getElementById('batchDepth').value || 'Not Specified';
                  const prompt = `You are an expert marine ecologist. Your task is to generate a concise ecological insights report in a structured JSON format based on eDNA sample data.\n\n### CONTEXT\n- Sample ID: ${sampleId}\n- Environment Type: ${environment}\n- Depth: ${depth} meters\n\n### INPUT DATA\n\`\`\`json\n${JSON.stringify(aggregatedData, null, 2)}\n\`\`\`\n\n### YOUR TASK\nAnalyze the data and return a JSON object with the exact following structure. For "insight", provide a 2-3 sentence summary. For "richness_value", provide the total number of unique taxa. For "evenness_category", classify as 'Low', 'Moderate', or 'High'. For "protist_count" and "metazoan_count", provide the total read count for each group.\n\n### REQUIRED JSON OUTPUT STRUCTURE\n\`\`\`json\n{ "summary": { "title": "Ecological Summary", "insight": "" }, "biodiversity_assessment": { "title": "Biodiversity Assessment", "insight": "", "richness_value": 0, "evenness_category": "" }, "community_structure": { "title": "Community Structure", "insight": "", "protist_count": 0, "metazoan_count": 0 }, "dominant_taxa": { "title": "Dominant Taxa & Significance", "insight": "" }, "trophic_levels": { "title": "Ecological Roles & Food Web", "insight": "" }, "bioindicators": { "title": "Bioindicator Analysis", "insight": "" } }\n\`\`\``;
                  try {
-                     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                     if (!response.ok) throw new Error(`Gemini API Error (${response.status}): ${await response.text()}`);
-                     const result = await response.json();
-                     if (!result.candidates?.[0]?.content?.parts?.[0]) throw new Error("Invalid response structure from Gemini API.");
-                     const rawText = result.candidates[0].content.parts[0].text;
-                     const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-                     if (!jsonMatch) throw new Error("Invalid JSON response from Gemini API.");
-                     const insights = JSON.parse(jsonMatch[0]);
-                     currentInsightsData = insights; // Store for PDF generation
-                     displayEcologicalInsights(insights);
-                     downloadReportBtn.classList.remove('hidden');
-                     pipelineStatusEl.innerHTML += `<br><span class="text-green-600">[3/3] Insights generated successfully. [OK]</span>`;
+                      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
+                      if (!response.ok) throw new Error(`Gemini API Error (${response.status}): ${await response.text()}`);
+                      const result = await response.json();
+                      if (!result.candidates?.[0]?.content?.parts?.[0]) throw new Error("Invalid response structure from Gemini API.");
+                      const rawText = result.candidates[0].content.parts[0].text;
+                      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+                      if (!jsonMatch) throw new Error("Invalid JSON response from Gemini API.");
+                      const insights = JSON.parse(jsonMatch[0]);
+                      currentInsightsData = insights; // Store for PDF generation
+                      displayEcologicalInsights(insights);
+                      generateReportBtn.classList.remove('hidden');
+                      chatBtn.classList.remove('hidden'); // Show chat button
+                      pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[3/3] Insights generated successfully. [OK]</span>`;
                  } catch (error) {
-                     console.error("Gemini API call failed:", error);
-                     insightsResultEl.innerHTML = `<div class="text-red-600 font-light">Failed to generate insights: ${error.message}</div>`;
-                     pipelineStatusEl.innerHTML += `<br><span class="text-red-600">[3/3] Failed to generate insights.</span>`;
+                      console.error("Gemini API call failed:", error);
+                      insightsResultEl.innerHTML = `<div class="text-red-500 font-light">Failed to generate insights: ${error.message}</div>`;
+                      pipelineStatusEl.innerHTML += `<br><span class="text-red-500">[3/3] Failed to generate insights.</span>`;
                  }
             }
-            
+           
             function createCommunityChart(canvasId, protistCount, metazoanCount) {
                  const chartInstance = Chart.getChart(canvasId);
                  if(chartInstance) chartInstance.destroy();
                  const ctx = document.getElementById(canvasId).getContext('2d');
-                 new Chart(ctx, { type: 'doughnut', data: { labels: ['Protista', 'Metazoa'], datasets: [{ data: [protistCount, metazoanCount], backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)'], borderColor: ['#3B82F6', '#EF4444'], borderWidth: 2 }] }, options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#64748b', boxWidth: 12, padding: 15, font: { family: "'Roboto Mono', monospace" } } }, title: { display: false } } } });
+                 new Chart(ctx, { type: 'doughnut', data: { labels: ['Protista', 'Metazoa'], datasets: [{ data: [protistCount, metazoanCount], backgroundColor: ['rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)'], borderColor: ['#3B82F6', '#EF4444'], borderWidth: 1 }] }, options: { responsive: true, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', boxWidth: 12, padding: 15, font: { family: "'Roboto Mono', monospace" } } }, title: { display: false } } } });
             }
 
             function displayEcologicalInsights(insights) {
                 insightsResultEl.innerHTML = '';
-                if (!insights) { insightsResultEl.innerHTML = '<p class="text-slate-500">No insights were generated.</p>'; return; }
-                const createInsightBlock = (item) => `<div class="border-l-2 border-slate-200 pl-4"><h4 class="font-bold text-slate-800 tracking-wide">${item.title || 'Insight'}</h4><p class="text-slate-600 mt-1">${item.insight || 'No details provided.'}</p></div>`;
+                if (!insights) { insightsResultEl.innerHTML = '<p class="text-gray-500">No insights were generated.</p>'; return; }
+                const createInsightBlock = (item) => `<div class="border-l-2 border-[#27272a] pl-4"><h4 class="font-semibold text-white tracking-wide">${item.title || 'Insight'}</h4><p class="text-gray-400 mt-1">${item.insight || 'No details provided.'}</p></div>`;
                 if (insights.summary) insightsResultEl.innerHTML += createInsightBlock(insights.summary);
                 if (insights.biodiversity_assessment) {
                     const item = insights.biodiversity_assessment;
-                    const infographicHTML = `<div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-slate-200/50"><div class="text-center p-2 bg-slate-100 rounded-md"><div class="text-2xl font-bold text-slate-800">${item.richness_value || 'N/A'}</div><div class="text-xs text-slate-500 uppercase tracking-wider">Taxa Richness</div></div><div class="text-center p-2 bg-slate-100 rounded-md"><div class="text-2xl font-bold text-slate-800">${item.evenness_category || 'N/A'}</div><div class="text-xs text-slate-500 uppercase tracking-wider">Evenness</div></div></div>`;
+                    const infographicHTML = `<div class="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-[#27272a]/50"><div class="text-center p-2 bg-black/50 rounded-md"><div class="text-2xl font-bold text-white">${item.richness_value || 'N/A'}</div><div class="text-xs text-gray-400 uppercase tracking-wider font-mono">Taxa Richness</div></div><div class="text-center p-2 bg-black/50 rounded-md"><div class="text-2xl font-bold text-white">${item.evenness_category || 'N/A'}</div><div class="text-xs text-gray-400 uppercase tracking-wider font-mono">Evenness</div></div></div>`;
                     insightsResultEl.innerHTML += createInsightBlock(item) + infographicHTML;
                 }
                 if (insights.community_structure) {
                     const item = insights.community_structure;
-                    const chartHTML = `<div class="mt-4 pt-4 border-t border-slate-200/50"><canvas id="communityDonutChart" class="max-h-48 mx-auto"></canvas></div>`;
+                    const chartHTML = `<div class="mt-4 pt-4 border-t border-[#27272a]/50"><canvas id="communityDonutChart" class="max-h-48 mx-auto"></canvas></div>`;
                     insightsResultEl.innerHTML += createInsightBlock(item) + chartHTML;
                     setTimeout(() => createCommunityChart('communityDonutChart', item.protist_count || 0, item.metazoan_count || 0), 0);
                 }
@@ -629,16 +811,16 @@
 
             function populateSingleResult(apiData, markerLabel = '') {
                 if (apiData) {
-                    classificationResultEl.innerHTML += `<div class="p-3 bg-slate-50 border border-slate-200 rounded-md mb-2 font-mono text-xs"><div class="flex justify-between items-center mb-1"><span class="text-slate-500">Source Marker:</span><span class="text-slate-800 font-semibold">${markerLabel}</span></div><div class="flex justify-between items-center"><span class="text-slate-500">Predicted Group:</span><span class="text-slate-800 font-semibold">${apiData.predicted_group || 'N/A'}</span><span class="text-slate-400">CONF: ${(apiData.group_confidence * 100).toFixed(0)}%</span></div><div class="flex justify-between items-center"><span class="text-slate-500">Predicted Taxa:</span><span class="text-slate-800 font-semibold">${apiData.predicted_taxa || 'N/A'}</span><span class="text-slate-400">CONF: ${(apiData.taxa_confidence * 100).toFixed(0)}%</span></div></div>`;
-                    noveltyResultEl.innerHTML = `<span class="font-semibold">${apiData.novelty_status}</span>`;
+                    classificationResultEl.innerHTML += `<div class="p-3 bg-black border border-[#27272a] rounded-md mb-2 font-mono"><div class="flex justify-between items-center mb-1"><span class="text-gray-400">Source Marker:</span><span class="text-white font-semibold">${markerLabel}</span></div><div class="flex justify-between items-center"><span class="text-gray-400">Predicted Group:</span><span class="text-white font-semibold">${apiData.predicted_group || 'N/A'}</span><span class="text-gray-500">CONF: ${(apiData.group_confidence * 100).toFixed(0)}%</span></div><div class="flex justify-between items-center"><span class="text-gray-400">Predicted Taxa:</span><span class="text-white font-semibold">${apiData.predicted_taxa || 'N/A'}</span><span class="text-gray-500">CONF: ${(apiData.taxa_confidence * 100).toFixed(0)}%</span></div></div>`;
+                    noveltyResultEl.innerHTML = `<span class="font-semibold">${apiData.novelty_status || 'Not Flagged'}</span>`;
                 } else {
-                    classificationResultEl.innerHTML = '<div class="text-slate-500">Analysis failed. See status.</div>';
+                    classificationResultEl.innerHTML = '<div class="text-gray-500">Analysis failed. See status.</div>';
                     noveltyResultEl.innerHTML = 'N/A';
                 }
                 updateAbundanceChart([]);
-                insightsResultEl.innerHTML = '<p class="text-slate-500">Ecological insights are only available for batch analysis.</p>';
+                insightsResultEl.innerHTML = '<p class="text-gray-500">Ecological insights are only available for batch analysis.</p>';
             }
-            
+           
             function updateAbundanceChart(results) {
                  const counts = results.reduce((acc, result) => { acc[result.predicted_taxa || "Unknown"] = (acc[result.predicted_taxa || "Unknown"] || 0) + 1; return acc; }, {});
                  const sortedTaxa = Object.entries(counts).sort((a, b) => b[1] - a[1]);
@@ -647,11 +829,11 @@
                  const abundanceChartInstance = Chart.getChart('abundanceChart');
                  if(abundanceChartInstance) abundanceChartInstance.destroy();
                  const ctx = document.getElementById('abundanceChart').getContext('2d');
-                 Chart.defaults.font.family = "'Manrope', sans-serif";
-                 new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Count', data: data, backgroundColor: '#0ea5e9', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, scales: { y: { ticks: { color: '#64748b', font: {size: 10} }, grid: { color: '#e2e8f0' } }, x: { ticks: { color: '#64748b' }, grid: { color: '#e2e8f0' } } }, plugins: { legend: { display: false }, title: { display: labels.length === 0, text: 'No batch data to display', color: '#94a3b8', font: {size: 12} } } } });
+                 Chart.defaults.font.family = "'Roboto Mono', monospace";
+                 new Chart(ctx, { type: 'bar', data: { labels: labels, datasets: [{ label: 'Count', data: data, backgroundColor: '#3b82f6', borderRadius: 4 }] }, options: { indexAxis: 'y', responsive: true, scales: { y: { ticks: { color: '#9ca3af', font: {size: 10} }, grid: { color: '#27272a' } }, x: { ticks: { color: '#9ca3af' }, grid: { color: '#27272a' } } }, plugins: { legend: { display: false }, title: { display: labels.length === 0, text: 'No batch data to display', color: '#6b7280', font: {size: 12} } } } });
             }
 
-            function generatePdfReport(insights) {
+            function generateSummaryPdfReport(insights) {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
@@ -660,13 +842,6 @@
                 const margin = 15;
                 let yPos = margin;
 
-                const addWrappedText = (text, x, y, options) => {
-                    const maxWidth = docWidth - (margin * 2);
-                    const lines = doc.splitTextToSize(text, maxWidth);
-                    doc.text(lines, x, y, options);
-                    return y + (lines.length * 5); // Approximate line height (5mm)
-                };
-                
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(20);
                 doc.text("Ecological Insights Report", docWidth / 2, yPos, { align: "center" });
@@ -685,26 +860,40 @@
 
                 const renderSection = (item) => {
                     if (!item) return;
-                     if (yPos > docHeight - 30) { // Check for page break
-                        doc.addPage();
-                        yPos = margin;
-                    }
+                     if (yPos > docHeight - 30) { 
+                         doc.addPage();
+                         yPos = margin;
+                     }
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(12);
-                    yPos = addWrappedText(item.title, margin, yPos);
-                    yPos += 1;
+                    doc.text(item.title, margin, yPos);
+                    yPos += 6;
                     doc.setFont("helvetica", "normal");
                     doc.setFontSize(10);
-                    yPos = addWrappedText(item.insight, margin, yPos);
+                    const lines = doc.splitTextToSize(item.insight, docWidth - margin * 2);
+                    doc.text(lines, margin, yPos);
+                    yPos += (lines.length * 5);
+
                     if (item.richness_value !== undefined) {
-                        yPos = addWrappedText(`Taxa Richness: ${item.richness_value} | Evenness: ${item.evenness_category}`, margin, yPos);
+                         yPos += 2;
+                         doc.text(`Taxa Richness: ${item.richness_value} | Evenness: ${item.evenness_category}`, margin, yPos);
+                         yPos += 5;
                     }
-                    if (item.protist_count !== undefined) {
-                        yPos = addWrappedText(`Protist Count: ${item.protist_count} | Metazoan Count: ${item.metazoan_count}`, margin, yPos);
-                    }
+                     if (item.protist_count !== undefined) {
+                         const communityChartCanvas = document.getElementById('communityDonutChart');
+                         if (communityChartCanvas) {
+                             const communityChartImg = communityChartCanvas.toDataURL('image/png', 1.0);
+                             if (yPos > docHeight - 60) {
+                                 doc.addPage();
+                                 yPos = margin;
+                             }
+                             doc.addImage(communityChartImg, 'PNG', docWidth / 2 - 25, yPos, 50, 50);
+                             yPos += 55;
+                         }
+                     }
                     yPos += 8;
                 };
-                
+               
                 Object.values(insights).forEach(renderSection);
 
                 const pageCount = doc.internal.getNumberOfPages();
@@ -715,16 +904,323 @@
                     doc.text('Report by Bio-Line', docWidth / 2, docHeight - 10, { align: 'center' });
                 }
 
-                doc.save('Bio-Line-Ecological-Report.pdf');
+                doc.save('Bio-Line-Summary-Report.pdf');
+            }
+           
+            async function generateDetailedPdfReport() {
+                modalButtons.classList.add('hidden');
+                modalLoader.classList.remove('hidden');
+
+                const apiKey = "AIzaSyABQw87mIPRP56tYS1GXMk_eedpj6lIyBs"; // Replace with your key if needed
+                const environment = document.getElementById('environmentType').value || 'Not Specified';
+                const depth = document.getElementById('batchDepth').value || 'Not Specified';
+
+                const detailedPrompt = `
+You are an expert marine biologist and bioinformatician tasked with creating a comprehensive, multi-page ecological report based on eDNA analysis data.
+
+### CONTEXT
+- **Platform:** Bio-Line AI Analysis
+- **Sample Environment:** ${environment}
+- **Sample Depth:** ${depth} meters
+- **Analysis Type:** High-throughput eDNA sequencing with AI-powered taxonomic classification.
+
+### INPUT DATA
+- **Aggregated Community Data:** ${JSON.stringify(currentInsightsData)}
+- **Individual Sequence Findings:** \`\`\`json
+${JSON.stringify(detailedReportData.slice(0, 50))}
+\`\`\`
+(Note: Only the first 50 sequences are shown for brevity, but analyze the full dataset conceptually.)
+
+### YOUR TASK
+Generate a detailed, multi-page report as a single block of Markdown-formatted text. The report should be structured with the following sections using Markdown headings (#, ##, ###).
+
+1.  **# Executive Summary:** A high-level overview of the findings, key insights, and primary recommendations. (Approx. 2 paragraphs)
+2.  **# Introduction & Methodology:** Briefly explain eDNA metabarcoding. Describe the Bio-Line pipeline: data ingestion, marker gene extraction (COI and 18S rRNA), AI classification, and ecological insight generation. (Approx. 3-4 paragraphs)
+3.  **# Biodiversity Assessment:**
+    * **## Community Composition:** Analyze the overall community structure based on the aggregated data. Discuss the richness, evenness, and the ratio of major groups like protists and metazoans.
+    * **## Dominant Taxa & Ecological Roles:** Identify the top 3-5 most abundant taxa from the data. For each, describe their known ecological roles (e.g., primary producer, grazer, predator, decomposer) and what their dominance suggests about the ecosystem.
+4.  **# Detailed Findings:**
+    * Create a Markdown table with the following columns for the first 15 sequences from the detailed data: "Sample ID", "Detected Gene", "Predicted Taxa".
+5.  **# Analysis of Potential Threats & Conservation:**
+    * Based on the identified taxa and specified environment (e.g., 'Hydrothermal Vent'), infer potential ecological threats. Consider general threats like climate change (ocean warming, acidification), pollution (microplastics, chemical), and potential localized threats (e.g., deep-sea mining if near vents).
+    * Discuss how the presence or absence of certain bioindicator species in the data might point to these threats.
+    * Provide 2-3 specific, actionable conservation recommendations based on your analysis.
+6.  **# Conclusion:** Summarize the importance of these findings and suggest future research directions.
+
+Ensure the language is scientific, professional, and accessible. The final output must be a single string of Markdown text.
+`;
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: detailedPrompt }] }] }) });
+                    if (!response.ok) throw new Error(`Gemini API Error (${response.status}): ${await response.text()}`);
+                    const result = await response.json();
+                    const markdownText = result.candidates[0].content.parts[0].text;
+                   
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+                    const docWidth = doc.internal.pageSize.getWidth();
+                    const docHeight = doc.internal.pageSize.getHeight();
+                    const margin = 15;
+                    let yPos = 0;
+                   
+                    const addHeader = (text) => {
+                        doc.setFont("helvetica", "bold");
+                        doc.setFontSize(14);
+                        doc.setTextColor(0,0,0);
+                        doc.text(text, docWidth / 2, margin, { align: "center"});
+                        yPos = margin + 15;
+                    };
+
+                    const addFooter = () => {
+                        const pageCount = doc.internal.getNumberOfPages();
+                        for(let i = 1; i <= pageCount; i++) {
+                            doc.setPage(i);
+                            doc.setLineWidth(0.2);
+                            doc.setDrawColor(200);
+                            doc.line(margin, docHeight - 18, docWidth - margin, docHeight - 18);
+                            doc.setFontSize(9);
+                            doc.setTextColor(100);
+                            doc.text(`Report by Bio-Line // CMLRE Initiative`, margin, docHeight - 10);
+                            doc.text(`Page ${i} of ${pageCount}`, docWidth - margin, docHeight - 10, { align: 'right' });
+                        }
+                    };
+
+                    const checkPageBreak = (neededHeight) => {
+                        if (yPos + neededHeight > docHeight - 25) {
+                           doc.addPage();
+                           yPos = margin;
+                        }
+                    };
+
+                    addHeader("Detailed Ecological Insights Report");
+                   
+                    const lines = markdownText.split('\n');
+                    for (const line of lines) {
+                        let trimmedLine = line.trim();
+                       
+                        if (trimmedLine.startsWith('# ')) {
+                            checkPageBreak(20);
+                            yPos += 8;
+                            doc.setFont("helvetica", "bold");
+                            doc.setFontSize(16);
+                            doc.setTextColor(0,0,0);
+                            const text = trimmedLine.substring(2);
+                            const splitText = doc.splitTextToSize(text, docWidth - margin * 2);
+                            doc.text(splitText, margin, yPos);
+                            yPos += (splitText.length * 7) + 2;
+                            doc.setLineWidth(0.2);
+                            doc.setDrawColor(200);
+                            doc.line(margin, yPos-2, margin + 50, yPos-2);
+                            yPos += 5;
+
+                        } else if (trimmedLine.startsWith('## ')) {
+                            checkPageBreak(15);
+                            yPos += 6;
+                            doc.setFont("helvetica", "bold");
+                            doc.setFontSize(12);
+                             doc.setTextColor(50,50,50);
+                            const text = trimmedLine.substring(3);
+                            const splitText = doc.splitTextToSize(text, docWidth - margin * 2);
+                            doc.text(splitText, margin, yPos);
+                            yPos += (splitText.length * 6) + 4;
+
+                        } else if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+                             checkPageBreak(8);
+                             doc.setFont("helvetica", "normal");
+                             doc.setFontSize(10);
+                             doc.setTextColor(0,0,0);
+                             const text = trimmedLine.substring(2);
+                             const splitText = doc.splitTextToSize(text, docWidth - (margin * 2) - 5);
+                             doc.text("•", margin, yPos + 1, { baseline: 'top' });
+                             doc.text(splitText, margin + 5, yPos);
+                             yPos += (splitText.length * 5) + 2;
+                       
+                        } else if (trimmedLine.startsWith('|')) {
+                            checkPageBreak(5);
+                            doc.setFont("courier", "normal");
+                            doc.setFontSize(8);
+                            doc.setTextColor(80,80,80);
+                            doc.text(trimmedLine.replace(/\|/g, '  '), margin, yPos);
+                            yPos += 4;
+
+                        } else if (trimmedLine.length > 0) {
+                            checkPageBreak(10);
+                            doc.setFont("helvetica", "normal");
+                            doc.setFontSize(10);
+                            doc.setTextColor(0,0,0);
+                            const splitText = doc.splitTextToSize(trimmedLine, docWidth - margin * 2);
+                            doc.text(splitText, margin, yPos);
+                            yPos += (splitText.length * 5) + 3;
+                        }
+
+                        if (trimmedLine.toLowerCase().includes('## community composition')) {
+                            const abundanceChartCanvas = document.getElementById('abundanceChart');
+                            if(abundanceChartCanvas) {
+                                const abundanceChartImg = abundanceChartCanvas.toDataURL('image/png', 1.0);
+                                checkPageBreak(80);
+                                yPos += 5;
+                                doc.addImage(abundanceChartImg, 'PNG', margin, yPos, docWidth - (margin * 2), 70);
+                                yPos += 75;
+                                doc.setFontSize(8);
+                                doc.setTextColor(150);
+                                doc.text('Figure 1: Top 15 most abundant taxa identified in the sample.', docWidth / 2, yPos, {align: 'center'});
+                                yPos += 10;
+                            }
+                        }
+                        if(currentInsightsData.community_structure && trimmedLine.toLowerCase().includes('## community composition')) {
+                            const communityChartCanvas = document.getElementById('communityDonutChart');
+                            if(communityChartCanvas) {
+                                const communityChartImg = communityChartCanvas.toDataURL('image/png', 1.0);
+                                 checkPageBreak(80);
+                                 yPos += 5;
+                                 doc.addImage(communityChartImg, 'PNG', docWidth / 2 - 40, yPos, 80, 80);
+                                 yPos += 85;
+                                 doc.setFontSize(8);
+                                 doc.setTextColor(150);
+                                 doc.text('Figure 2: Proportional abundance of Protista vs. Metazoa.', docWidth / 2, yPos, {align: 'center'});
+                                 yPos += 10;
+                            }
+                        }
+                    }
+
+                    addFooter();
+                    doc.save('Bio-Line-Detailed-Report.pdf');
+
+                } catch (error) {
+                    alert("Failed to generate detailed report: " + error.message);
+                } finally {
+                    modalButtons.classList.remove('hidden');
+                    modalLoader.classList.add('hidden');
+                    reportModal.classList.add('hidden');
+                }
             }
 
-            downloadReportBtn.addEventListener('click', () => {
-                if (currentInsightsData) {
-                    generatePdfReport(currentInsightsData);
+            // --- Chatbot Logic ---
+            chatBtn.addEventListener('click', () => {
+                chatbotContainer.classList.remove('hidden');
+                if (chatMessages.children.length === 0) {
+                    appendMessage("Hello! I'm the Bio-Line AI assistant. How can I help you interpret these ecological insights?", 'bot');
                 }
             });
+
+            closeChatbotBtn.addEventListener('click', () => {
+                chatbotContainer.classList.add('hidden');
+            });
+
+            chatForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userInput = chatInput.value.trim();
+                if (!userInput) return;
+
+                appendMessage(userInput, 'user');
+                chatInput.value = '';
+                appendMessage('...', 'bot', true); // Thinking indicator
+
+                try {
+                    const botResponse = await askGeminiForChat(userInput);
+                    const thinkingIndicator = document.getElementById('thinking');
+                    if (thinkingIndicator) thinkingIndicator.parentElement.remove();
+                    appendMessage(botResponse, 'bot');
+                } catch (error) {
+                    console.error("Chatbot API call failed:", error);
+                    const thinkingIndicator = document.getElementById('thinking');
+                    if (thinkingIndicator) thinkingIndicator.parentElement.remove();
+                    appendMessage("Sorry, I encountered an error. Please try again.", 'bot');
+                }
+            });
+
+            function appendMessage(text, sender, isThinking = false) {
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `flex w-full ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+                const messageElement = document.createElement('div');
+                messageElement.className = `max-w-xs md:max-w-md p-3 rounded-lg text-sm`;
+
+                if (sender === 'user') {
+                    messageElement.classList.add('bg-white', 'text-black');
+                } else {
+                    messageElement.classList.add('bg-[#18181b]', 'text-gray-300', 'border', 'border-[#27272a]');
+                }
+               
+                if (isThinking) {
+                    messageElement.id = 'thinking';
+                    messageElement.innerHTML = `<div class="flex items-center space-x-1 p-1">
+                        <div class="w-2 h-2 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 0s;"></div>
+                        <div class="w-2 h-2 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                        <div class="w-2 h-2 bg-gray-500 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+                    </div>`;
+                } else {
+                    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                    messageElement.innerHTML = text;
+                }
+               
+                messageWrapper.appendChild(messageElement);
+                chatMessages.appendChild(messageWrapper);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            async function askGeminiForChat(question) {
+                if (!currentInsightsData) {
+                    return "The ecological insights data isn't available. Please run a batch analysis first.";
+                }
+
+                const apiKey = "AIzaSyABQw87mIPRP56tYS1GXMk_eedpj6lIyBs"; // Replace with your key if needed
+                const systemPrompt = `You are a helpful and friendly AI assistant for the Bio-Line platform, specializing in marine ecology. Your name is "Bio-Line Assistant".
+                Your primary task is to answer questions based on the provided JSON data from an eDNA analysis.
+                - First, always try to answer using the **provided JSON data context**.
+                - If the question is a general knowledge question related to biology or ecology (like defining a term or giving examples of a phylum) and the answer is not in the JSON, you are allowed to use your general knowledge to provide a helpful, accurate answer.
+                - When answering from general knowledge, be clear that this information is not from the specific sample analysis. For example, start with "Generally speaking,..." or "While not detailed in this specific analysis,...".
+                - If the user asks a question completely unrelated to the analysis or ecology, politely decline to answer.
+                - Keep your answers concise and easy to understand for a scientist.
+                - You can use markdown for formatting, like using **bold** text to highlight key terms.`;
+               
+                const userPrompt = `CONTEXT DATA:
+                \`\`\`json
+                ${JSON.stringify(currentInsightsData, null, 2)}
+                \`\`\`
+                QUESTION:
+                ${question}`;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: userPrompt }] }],
+                        tools: [{ "google_search": {} }],
+                        systemInstruction: { parts: [{ text: systemPrompt }] }
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Chatbot Gemini API Error (${response.status}): ${errorText}`);
+                }
+
+                const result = await response.json();
+                if (!result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    throw new Error("Invalid response structure from Chatbot Gemini API.");
+                }
+
+                return result.candidates[0].content.parts[0].text;
+            }
+
+            // Modal listeners
+            generateReportBtn.addEventListener('click', () => {
+                reportModal.classList.remove('hidden');
+            });
+            closeModalBtn.addEventListener('click', () => {
+                reportModal.classList.add('hidden');
+            });
+            downloadSummaryReportBtn.addEventListener('click', () => {
+                if (currentInsightsData) {
+                    generateSummaryPdfReport(currentInsightsData);
+                }
+                 reportModal.classList.add('hidden');
+            });
+            downloadDetailedReportBtn.addEventListener('click', () => {
+                generateDetailedPdfReport();
+            });
+
         });
     </script>
 </body>
 </html>
-
