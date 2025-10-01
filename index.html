@@ -132,6 +132,11 @@
         #classificationResult::-webkit-scrollbar-thumb:hover {
             background: #3f3f46;
         }
+        
+        /* Force Chart.js canvas text to be white */
+        canvas {
+            color: #ffffff !important;
+        }
     </style>
 </head>
 
@@ -230,11 +235,27 @@
                     </div>
                 </div>
                 <div class="card p-6 border border-[#27272a] rounded-lg">
-                    <h2 class="text-lg font-semibold text-white mb-4 font-mono">// BATCH ANALYSIS (CSV)</h2>
-                    <p class="text-xs text-gray-400 mb-4">Upload a CSV file with 'sample_id' and 'sequence' columns.</p>
-                    <input type="file" id="csvFileInput" class="hidden" accept=".csv">
+                    <h2 class="text-lg font-semibold text-white mb-4 font-mono">// BATCH ANALYSIS (CSV/FASTA)</h2>
+                    <p class="text-xs text-gray-400 mb-2">Upload a CSV file with 'sample_id' and 'sequence' columns, or a FASTA file with sequences.</p>
+                    
+                    <!-- Format Examples -->
+                    <details class="mb-4">
+                        <summary class="text-xs text-blue-400 cursor-pointer hover:text-blue-300 transition">View format examples</summary>
+                        <div class="mt-2 p-3 bg-black/50 border border-gray-800 rounded text-xs font-mono space-y-3">
+                            <div>
+                                <div class="text-gray-400 mb-1">CSV Format:</div>
+                                <code class="text-green-400 block">sample_id,sequence<br>sample_1,ATCGATCGATCG<br>sample_2,GCTAGCTAGCTA</code>
+                            </div>
+                            <div>
+                                <div class="text-gray-400 mb-1">FASTA Format:</div>
+                                <code class="text-green-400 block">>sample_1<br>ATCGATCGATCG<br>>sample_2<br>GCTAGCTAGCTA</code>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <input type="file" id="csvFileInput" class="hidden" accept=".csv,.fasta,.fa,.fna,.txt">
                     <button id="csvUploadBtn" class="w-full border border-dashed border-[#27272a] hover:border-white transition py-4 text-gray-400 text-sm rounded-md">
-                        CLICK TO UPLOAD CSV FILE
+                        CLICK TO UPLOAD CSV/FASTA FILE
                     </button>
                    
                     <div class="mt-4 space-y-3">
@@ -603,6 +624,62 @@
 
             csvUploadBtn.addEventListener('click', () => csvFileInput.click());
 
+            // Parse FASTA file format
+            function parseFasta(content) {
+                const sequences = [];
+                const lines = content.split('\n').filter(line => line.trim() !== '');
+                let currentId = null;
+                let currentSeq = '';
+                
+                for (const line of lines) {
+                    if (line.startsWith('>')) {
+                        // Save previous sequence if exists
+                        if (currentId) {
+                            sequences.push({
+                                sample_id: currentId,
+                                sequence: currentSeq
+                            });
+                        }
+                        // Start new sequence
+                        currentId = line.substring(1).trim().split(/\s+/)[0]; // Get ID (first word after >)
+                        currentSeq = '';
+                    } else {
+                        // Append to current sequence
+                        currentSeq += line.trim();
+                    }
+                }
+                
+                // Add the last sequence
+                if (currentId) {
+                    sequences.push({
+                        sample_id: currentId,
+                        sequence: currentSeq
+                    });
+                }
+                
+                return sequences;
+            }
+
+            // Parse CSV file format
+            function parseCsv(content) {
+                const rows = content.split('\n').filter(row => row.trim() !== '');
+                const headers = rows[0].split(',').map(h => h.trim());
+                const sampleIdIndex = headers.indexOf('sample_id');
+                const sequenceIndex = headers.indexOf('sequence');
+                
+                if (sampleIdIndex === -1 || sequenceIndex === -1) {
+                    throw new Error("CSV must contain 'sample_id' and 'sequence' columns.");
+                }
+                
+                return rows.slice(1).map(row => {
+                    const values = row.split(',');
+                    return {
+                        sample_id: values[sampleIdIndex].trim(),
+                        sequence: values[sequenceIndex].trim()
+                    };
+                });
+            }
+
             csvFileInput.addEventListener('change', (event) => {
                 const file = event.target.files[0];
                 if (file) {
@@ -610,22 +687,26 @@
                     reader.onload = (e) => {
                         try {
                             const content = e.target.result;
-                            const rows = content.split('\n').filter(row => row.trim() !== '');
-                            const headers = rows[0].split(',').map(h => h.trim());
-                            const sampleIdIndex = headers.indexOf('sample_id');
-                            const sequenceIndex = headers.indexOf('sequence');
-                            if (sampleIdIndex === -1 || sequenceIndex === -1) throw new Error("CSV must contain 'sample_id' and 'sequence' columns.");
-                            parsedCsvData = rows.slice(1).map(row => {
-                                const values = row.split(',');
-                                return {
-                                    sample_id: values[sampleIdIndex].trim(),
-                                    sequence: values[sequenceIndex].trim()
-                                };
-                            });
-                            csvUploadBtn.textContent = `${file.name} (${parsedCsvData.length} sequences) ready.`;
+                            const fileName = file.name.toLowerCase();
+                            
+                            // Detect file format and parse accordingly
+                            if (fileName.endsWith('.fasta') || fileName.endsWith('.fa') || fileName.endsWith('.fna') || content.trim().startsWith('>')) {
+                                // FASTA format
+                                parsedCsvData = parseFasta(content);
+                                csvUploadBtn.textContent = `${file.name} (${parsedCsvData.length} FASTA sequences) ready.`;
+                            } else {
+                                // CSV format
+                                parsedCsvData = parseCsv(content);
+                                csvUploadBtn.textContent = `${file.name} (${parsedCsvData.length} CSV sequences) ready.`;
+                            }
+                            
+                            if (parsedCsvData.length === 0) {
+                                throw new Error("No valid sequences found in file.");
+                            }
+                            
                             batchAnalyzeBtn.disabled = false;
                         } catch (err) {
-                            csvUploadBtn.textContent = 'Error parsing file. Check format.';
+                            csvUploadBtn.textContent = `Error: ${err.message}`;
                             console.error(err);
                             parsedCsvData = [];
                             batchAnalyzeBtn.disabled = true;
@@ -1322,7 +1403,7 @@
                     if (Object.keys(phylumCounts).length > 0) {
                         communityHTML += `<div class="mt-4 pt-4 border-t border-[#27272a]/50">`;
                         communityHTML += `<div class="text-xs text-gray-400 mb-3 text-center uppercase tracking-wider">Phylum-Level Diversity</div>`;
-                        communityHTML += `<canvas id="communityDonutChart" class="max-h-56 mx-auto"></canvas></div>`;
+                        communityHTML += `<div class="w-full" style="height: 280px;"><canvas id="communityDonutChart"></canvas></div></div>`;
                         insightsResultEl.innerHTML += communityHTML;
                         
                         // Create chart with phylum groups
@@ -1333,14 +1414,16 @@
                             if(chartInstance) chartInstance.destroy();
                             const ctx = document.getElementById('communityDonutChart').getContext('2d');
                             
-                            // Vibrant color palette with better contrast
+                            // Darker, muted color palette with subtle elegance
                             const colorPalette = [
-                                { bg: 'rgba(59, 130, 246, 0.85)', border: 'rgb(59, 130, 246)' },   // Blue
-                                { bg: 'rgba(236, 72, 153, 0.85)', border: 'rgb(236, 72, 153)' },  // Pink
-                                { bg: 'rgba(34, 197, 94, 0.85)', border: 'rgb(34, 197, 94)' },    // Green
-                                { bg: 'rgba(251, 191, 36, 0.85)', border: 'rgb(251, 191, 36)' },  // Yellow
-                                { bg: 'rgba(168, 85, 247, 0.85)', border: 'rgb(168, 85, 247)' },  // Purple
-                                { bg: 'rgba(14, 165, 233, 0.85)', border: 'rgb(14, 165, 233)' }   // Sky
+                                { bg: 'rgba(59, 130, 246, 0.75)', border: 'rgb(37, 99, 235)', glow: 'rgba(59, 130, 246, 0.3)' },      // Deep Blue
+                                { bg: 'rgba(236, 72, 153, 0.75)', border: 'rgb(219, 39, 119)', glow: 'rgba(236, 72, 153, 0.3)' },     // Deep Pink
+                                { bg: 'rgba(16, 185, 129, 0.75)', border: 'rgb(5, 150, 105)', glow: 'rgba(16, 185, 129, 0.3)' },       // Deep Green
+                                { bg: 'rgba(245, 158, 11, 0.75)', border: 'rgb(217, 119, 6)', glow: 'rgba(245, 158, 11, 0.3)' },       // Deep Amber
+                                { bg: 'rgba(168, 85, 247, 0.75)', border: 'rgb(147, 51, 234)', glow: 'rgba(168, 85, 247, 0.3)' },      // Deep Purple
+                                { bg: 'rgba(14, 165, 233, 0.75)', border: 'rgb(2, 132, 199)', glow: 'rgba(14, 165, 233, 0.3)' },       // Deep Cyan
+                                { bg: 'rgba(239, 68, 68, 0.75)', border: 'rgb(220, 38, 38)', glow: 'rgba(239, 68, 68, 0.3)' },         // Deep Red
+                                { bg: 'rgba(132, 204, 22, 0.75)', border: 'rgb(101, 163, 13)', glow: 'rgba(132, 204, 22, 0.3)' }       // Deep Lime
                             ];
                             
                             const backgroundColors = labels.map((_, i) => colorPalette[i % colorPalette.length].bg);
@@ -1366,23 +1449,45 @@
                                         duration: 1200,
                                         easing: 'easeOutQuart'
                                     },
-                                    responsive: true, 
-                                    cutout: '65%',
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    cutout: '60%',
                                     plugins: { 
                                         legend: { 
-                                            position: 'bottom',
+                                            position: 'right',
+                                            align: 'center',
                                             labels: { 
-                                                color: '#d1d5db', 
-                                                boxWidth: 14,
-                                                boxHeight: 14,
-                                                padding: 15,
+                                                color: '#ffffff',
+                                                boxWidth: 18,
+                                                boxHeight: 18,
+                                                padding: 16,
                                                 font: { 
-                                                    family: "'Roboto Mono', monospace",
-                                                    size: 11,
-                                                    weight: '500'
+                                                    family: "'Inter', sans-serif",
+                                                    size: 12,
+                                                    weight: '600'
                                                 },
-                                                usePointStyle: true,
-                                                pointStyle: 'circle'
+                                                usePointStyle: false,
+                                                generateLabels: function(chart) {
+                                                    const data = chart.data;
+                                                    if (data.labels.length && data.datasets.length) {
+                                                        return data.labels.map((label, i) => {
+                                                            const meta = chart.getDatasetMeta(0);
+                                                            const value = data.datasets[0].data[i];
+                                                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                                            const percentage = ((value / total) * 100).toFixed(1);
+                                                            return {
+                                                                text: `${label} (${percentage}%)`,
+                                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                                strokeStyle: data.datasets[0].borderColor[i],
+                                                                lineWidth: 2,
+                                                                fontColor: '#ffffff',
+                                                                hidden: !meta.data[i] || meta.data[i].hidden,
+                                                                index: i
+                                                            };
+                                                        });
+                                                    }
+                                                    return [];
+                                                }
                                             } 
                                         },
                                         tooltip: {
@@ -1549,6 +1654,7 @@
                  
                  const ctx = document.getElementById('abundanceChart').getContext('2d');
                  Chart.defaults.font.family = "'Roboto Mono', monospace";
+                 Chart.defaults.color = '#ffffff';
                  
                  new Chart(ctx, { 
                      type: 'bar', 

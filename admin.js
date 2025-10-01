@@ -145,6 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Element References ---
     const sidebar = document.getElementById('sidebar');
     const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
     const approvalListContainer = document.getElementById('approval-list');
     const userTableBody = document.getElementById('user-table-body');
     const userSearchInput = document.getElementById('user-search');
@@ -265,6 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Close sidebar on mobile after clicking a link
         if (window.innerWidth < 768) {
             sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.remove('active');
         }
     });
 
@@ -272,6 +274,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Sidebar Toggle for Mobile ---
     sidebarToggle.addEventListener('click', () => {
         sidebar.classList.toggle('-translate-x-full');
+        sidebarOverlay.classList.toggle('active');
+    });
+
+    // Close sidebar when clicking overlay
+    sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+        sidebarOverlay.classList.remove('active');
     });
     
     // --- Skeleton Loading Simulation ---

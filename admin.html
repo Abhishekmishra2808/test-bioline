@@ -81,12 +81,95 @@
         .toggle-checkbox:checked + .toggle-label {
             background-color: #34d399;
         }
+
+        /* Mobile responsiveness improvements */
+        @media (max-width: 768px) {
+            body {
+                background-size: 20px 20px;
+            }
+            
+            .card {
+                padding: 1rem !important;
+            }
+            
+            /* Improved table scrolling on mobile */
+            table {
+                font-size: 0.75rem;
+            }
+            
+            /* Stack cards vertically on mobile */
+            .grid {
+                grid-template-columns: 1fr !important;
+            }
+            
+            /* Better modal display on mobile */
+            #species-detail-modal .card {
+                margin: 1rem;
+                max-height: calc(100vh - 2rem);
+            }
+            
+            /* Adjust chart heights for mobile */
+            canvas {
+                max-height: 250px !important;
+            }
+            
+            /* Hide less important columns on mobile */
+            .hide-on-mobile {
+                display: none;
+            }
+            
+            /* Make buttons stack on mobile */
+            .flex-wrap {
+                flex-wrap: wrap;
+            }
+            
+            /* Dictionary grid single column on mobile */
+            #dictionary-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Tablet adjustments */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            #dictionary-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+        }
+
+        /* Overlay for mobile sidebar */
+        #sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+            backdrop-filter: blur(2px);
+        }
+        
+        #sidebar-overlay.active {
+            display: block;
+        }
+
+        /* Improved sidebar for mobile */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 50;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            }
+        }
     </style>
 </head>
 <body class="antialiased">
+    <!-- Mobile Sidebar Overlay -->
+    <div id="sidebar-overlay"></div>
+    
     <div class="flex h-screen overflow-hidden">
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-black/50 border-r border-gray-800 flex-shrink-0 transition-all duration-300 ease-in-out -translate-x-full md:translate-x-0">
+        <aside id="sidebar" class="w-64 bg-black/90 border-r border-gray-800 flex-shrink-0 transition-all duration-300 ease-in-out -translate-x-full md:translate-x-0 fixed md:relative h-full z-50">
             <div class="px-6 py-4 border-b border-gray-800">
                 <h1 class="text-lg font-bold text-white tracking-widest">Bio-Line</h1>
             </div>
@@ -122,29 +205,29 @@
         <div class="flex-1 flex flex-col overflow-hidden">
             <!-- Header -->
             <header class="bg-black/50 border-b border-gray-800">
-                <div class="px-6 py-3 flex items-center justify-between">
-                    <div class="flex items-center">
-                        <button id="sidebar-toggle" class="md:hidden mr-4 text-gray-400 hover:text-white">
+                <div class="px-4 md:px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center min-w-0">
+                        <button id="sidebar-toggle" class="md:hidden mr-3 text-gray-400 hover:text-white flex-shrink-0">
                             <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 12h18M3 6h18M3 18h18" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                         </button>
-                        <h2 class="text-lg font-bold text-white tracking-widest">// SYSTEM ADMINISTRATION</h2>
+                        <h2 class="text-sm md:text-lg font-bold text-white tracking-widest truncate">// SYSTEM ADMINISTRATION</h2>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <button id="notifications-btn" class="text-gray-400 hover:text-white relative">
-                             <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        <button id="notifications-btn" class="text-gray-400 hover:text-white relative flex-shrink-0">
+                             <svg class="h-5 w-5 md:h-6 md:w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>
                              <span class="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full border-2 border-black"></span>
                         </button>
-                        <div class="relative">
+                        <div class="relative hidden md:block">
                             <button id="profile-btn" class="flex items-center space-x-2 text-sm text-gray-300 hover:text-white">
                                 <img src="https://placehold.co/32x32/18181b/ffffff?text=A" alt="Admin" class="h-8 w-8 rounded-full border-2 border-gray-700">
-                                <span>Admin</span>
+                                <span class="hidden lg:inline">Admin</span>
                                 <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
                             </button>
                         </div>
-                         <button id="logout-btn" class="text-gray-400 hover:text-white text-xs uppercase">Logout</button>
+                         <button id="logout-btn" class="text-gray-400 hover:text-white text-xs uppercase hidden md:block">Logout</button>
                     </div>
                 </div>
-                 <div class="px-6 pb-3 text-xs text-gray-500">
+                 <div class="px-4 md:px-6 pb-3 text-xs text-gray-500">
                     <span>Admin</span> / <span id="breadcrumb-active">Dashboard</span>
                 </div>
             </header>
@@ -228,15 +311,15 @@
                                         <button id="export-users-btn" class="btn-secondary text-xs px-3 py-2 rounded-md">Export</button>
                                     </div>
                                 </div>
-                                <div class="p-5">
-                                    <table class="w-full text-left text-sm">
+                                <div class="p-5 overflow-x-auto">
+                                    <table class="w-full text-left text-sm min-w-[600px]">
                                         <thead>
                                             <tr class="border-b border-gray-800 text-xs text-gray-400 uppercase">
                                                 <th class="py-2"><input type="checkbox" id="select-all-users" class="bg-black border-gray-600"></th>
                                                 <th class="py-2">Email</th>
-                                                <th class="py-2">Role</th>
-                                                <th class="py-2">Last Login</th>
-                                                <th class="py-2 text-right">Analyses</th>
+                                                <th class="py-2 hide-on-mobile">Role</th>
+                                                <th class="py-2 hide-on-mobile">Last Login</th>
+                                                <th class="py-2 text-right hide-on-mobile">Analyses</th>
                                                 <th class="py-2 text-center">Status</th>
                                             </tr>
                                         </thead>
