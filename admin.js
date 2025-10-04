@@ -542,6 +542,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('modal-confidence').textContent = `${species.confidence}%`;
         document.getElementById('modal-notes').textContent = species.notes;
 
+        // Store current species data for buttons
+        currentSpeciesData = species;
+
         speciesModal.classList.remove('hidden');
     };
 
@@ -587,6 +590,73 @@ document.addEventListener('DOMContentLoaded', () => {
 
     closeModalBtn.addEventListener('click', () => {
         speciesModal.classList.add('hidden');
+    });
+
+    // Contact Information Modal
+    const contactInfoModal = document.getElementById('contact-info-modal');
+    const closeContactModalBtn = document.getElementById('close-contact-modal-btn');
+    const contactOrgBtn = document.getElementById('contact-org-btn');
+    const removeNoveltyBtn = document.getElementById('remove-novelty-btn');
+    let currentSpeciesData = null;
+    
+    // Show contact information modal
+    contactOrgBtn.addEventListener('click', () => {
+        if (!currentSpeciesData) return;
+        
+        // Mock contact information (in real app, this would come from a database)
+        const contactInfo = {
+            'CMLRE - ESSO': { email: 'biodiversity@cmlre.gov.in', phone: '+91-832-2525-000', website: 'www.cmlre.gov.in' },
+            'NIOT - Chennai': { email: 'research@niot.res.in', phone: '+91-44-2246-0876', website: 'www.niot.res.in' },
+            'INCOIS - Hyderabad': { email: 'director@incois.gov.in', phone: '+91-40-2389-5006', website: 'www.incois.gov.in' },
+            'ZSI - Kolkata': { email: 'zsi@zsi.gov.in', phone: '+91-33-2286-1948', website: 'www.zsi.gov.in' },
+            'CMFRI - Kochi': { email: 'director@cmfri.org.in', phone: '+91-484-239-4867', website: 'www.cmfri.org.in' },
+            'FSI - Mumbai': { email: 'fsi@fsi.gov.in', phone: '+91-22-2202-1515', website: 'www.fsi.nic.in' },
+            'International Partners': { email: 'global@marine-biodiversity.org', phone: '+1-555-0123', website: 'www.marine-biodiversity.org' }
+        };
+        
+        const orgInfo = contactInfo[currentSpeciesData.organization] || contactInfo['CMLRE - ESSO'];
+        
+        document.getElementById('contact-org-name').textContent = currentSpeciesData.organization;
+        document.getElementById('contact-email').textContent = orgInfo.email;
+        document.getElementById('contact-phone').textContent = orgInfo.phone;
+        document.getElementById('contact-website').textContent = orgInfo.website;
+        document.getElementById('contact-website').href = `https://${orgInfo.website}`;
+        document.getElementById('contact-project').textContent = currentSpeciesData.project;
+        
+        contactInfoModal.classList.remove('hidden');
+    });
+    
+    closeContactModalBtn.addEventListener('click', () => {
+        contactInfoModal.classList.add('hidden');
+    });
+    
+    contactInfoModal.addEventListener('click', (e) => {
+        if (e.target === contactInfoModal) {
+            contactInfoModal.classList.add('hidden');
+        }
+    });
+    
+    // Remove from novelty / Add full lineage
+    removeNoveltyBtn.addEventListener('click', () => {
+        if (!currentSpeciesData) return;
+        
+        showModal(`Add complete lineage for ${currentSpeciesData.uid}?\n\nThis will remove it from the novelty dictionary and classify it as a known species. You will be prompted to enter the full taxonomic lineage.`, () => {
+            // In a real application, this would open a form to input the full lineage
+            const lineagePrompt = `Please provide the complete taxonomic lineage:\n\nCurrent: ${currentSpeciesData.taxonomy.phylum} > ${currentSpeciesData.taxonomy.class}\n\nEnter complete lineage (Kingdom > Phylum > Class > Order > Family > Genus > Species):`;
+            const lineageInput = prompt(lineagePrompt);
+            
+            if (lineageInput && lineageInput.trim()) {
+                alert(`Lineage updated for ${currentSpeciesData.uid}\n\nNew classification: ${lineageInput}\n\nThis species has been removed from the novelty dictionary and added to the known species database.`);
+                speciesModal.classList.add('hidden');
+                
+                // Remove from dictionary (simulation)
+                const index = NOVELTY_DICTIONARY.findIndex(item => item.uid === currentSpeciesData.uid);
+                if (index > -1) {
+                    NOVELTY_DICTIONARY.splice(index, 1);
+                    initializeDictionary(); // Refresh the view
+                }
+            }
+        });
     });
 
     speciesModal.addEventListener('click', (e) => {
@@ -683,8 +753,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const accuracyTrendChart = new Chart(document.getElementById('accuracyTrendChart'), createChartConfig('line', {
         labels: [['v1.0', '(9 Taxa)'], ['v2.0', '(16 Taxa)'], ['v3.0', '(35 Taxa)']],
         datasets: [{ 
-            data: [86.4, 90.7, 93.8], 
+            data: [72, 82.6, 93.8], 
             borderColor: '#34d399', 
+            borderWidth: 3,
             tension: 0.4,
             fill: true,
             backgroundColor: (context) => {
@@ -696,11 +767,11 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             pointBackgroundColor: '#000',
             pointBorderColor: '#34d399',
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: 5,
+            pointHoverRadius: 7,
             pointHoverBorderWidth: 2,
         }]
-    }, { scales: { y: { min: 85, max: 95 } } }));
+    }, { scales: { y: { min: 60, max: 100, ticks: { stepSize: 10 } } } }));
 
     // Confidence Distribution Chart
     const confidenceDistChart = new Chart(document.getElementById('confidenceDistChart'), createChartConfig('bar', {
@@ -720,7 +791,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#api-status-content p').textContent = `${Math.floor(Math.random() * 5) + 10}ms`;
         const currentUserCount = parseInt(document.querySelector('#active-users-content p').textContent.replace(',', ''));
         document.querySelector('#active-users-content p').textContent = (currentUserCount + Math.floor(Math.random() * 5 - 2)).toLocaleString();
-        document.querySelector('#queue-content p').textContent = Math.floor(Math.random() * 10) + 80;
+        document.querySelector('#queue-content p').textContent = Math.floor(Math.random() * 2);
 
         // Update analysis chart
         if(analysisVolumeChart.data.datasets[0].data.length > 20) {

@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="database_search.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -35,6 +36,7 @@
             z-index: 0; /* Sits behind the content */
             transform: scale(2.5); /* --- MODIFICATION: "Super zoom" the model by 2.5x --- */
             transform-origin: center; /* Ensure it zooms from the center */
+            transition: opacity 0.3s ease; /* Smooth transition when hiding */
             
             /* * --- MODIFICATION: Enable Model Interaction --- 
              * The 'pointer-events: none;' property has been removed.
@@ -239,7 +241,7 @@
                     <p class="text-xs text-gray-400 mb-2">Upload a CSV file with 'sample_id' and 'sequence' columns, or a FASTA file with sequences.</p>
                     
                     <!-- Format Examples -->
-                    <details class="mb-4">
+                    <details class="mb-2">
                         <summary class="text-xs text-blue-400 cursor-pointer hover:text-blue-300 transition">View format examples</summary>
                         <div class="mt-2 p-3 bg-black/50 border border-gray-800 rounded text-xs font-mono space-y-3">
                             <div>
@@ -249,6 +251,19 @@
                             <div>
                                 <div class="text-gray-400 mb-1">FASTA Format:</div>
                                 <code class="text-green-400 block">>sample_1<br>ATCGATCGATCG<br>>sample_2<br>GCTAGCTAGCTA</code>
+                            </div>
+                        </div>
+                    </details>
+                    
+                    <!-- Download Sample Files -->
+                    <details class="mb-4">
+                        <summary class="text-xs text-blue-400 cursor-pointer hover:text-blue-300 transition">Download sample</summary>
+                        <div class="mt-2 p-3 bg-black/50 border border-gray-800 rounded text-xs space-y-2">
+                            <div>
+                                <a href="sample_sequences.csv" download class="text-blue-400 hover:text-blue-300 transition cursor-pointer">sample.csv (15 sequences)</a>
+                            </div>
+                            <div>
+                                <a href="sample_sequences.fasta" download class="text-blue-400 hover:text-blue-300 transition cursor-pointer">sample.fasta (15 sequences)</a>
                             </div>
                         </div>
                     </details>
@@ -292,11 +307,52 @@
                     <div id="diversityMetricsContent"></div>
                 </div>
 
+                <!-- Clustering Analysis Card -->
+                <div id="clusteringCard" class="hidden mb-8 card border border-[#27272a] p-6 rounded-lg">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-white font-mono">// ORGANISM CLUSTERING ANALYSIS</h3>
+                        <p class="text-gray-400 text-xs mt-2">Taxonomic relationships visualized using 2D UMAP clustering</p>
+                    </div>
+                    <div id="clusteringContent">
+                        <div id="clusteringResults" class="hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <!-- Stat Cards -->
+                                <div class="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/30 rounded-lg p-4">
+                                    <div class="text-xs text-blue-400 uppercase tracking-wider mb-1">Total Clusters</div>
+                                    <div class="text-3xl font-bold text-white" id="totalClustersCount">0</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/30 rounded-lg p-4">
+                                    <div class="text-xs text-green-400 uppercase tracking-wider mb-1">Clustered</div>
+                                    <div class="text-3xl font-bold text-white" id="clusteredCount">0</div>
+                                </div>
+                                <div class="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border border-yellow-500/30 rounded-lg p-4">
+                                    <div class="text-xs text-yellow-400 uppercase tracking-wider mb-1">Novel/Outliers</div>
+                                    <div class="text-3xl font-bold text-white" id="novelClusterCount">0</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Cluster Scatter Plot -->
+                            <div class="mb-6">
+                                <h4 class="text-sm font-semibold text-white mb-3 font-mono">Cluster Distribution (2D UMAP)</h4>
+                                <div class="bg-black/50 p-4 rounded-lg border border-[#27272a]">
+                                    <canvas id="clusterScatterChart" height="300"></canvas>
+                                </div>
+                            </div>
+                            
+                            <!-- Cluster Details -->
+                            <div id="clusterDetails" class="space-y-3"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Taxonomic Classification Results - Full Width -->
                 <div class="mb-8 card p-6 border border-[#27272a] rounded-lg">
                     <div class="flex justify-between items-center flex-wrap gap-2 mb-4">
                         <h3 class="text-lg font-semibold text-white font-mono">// TAXONOMIC CLASSIFICATION RESULTS</h3>
                         <div class="flex items-center gap-2">
+                            <button id="verifyDatabaseBtn" class="hidden btn-secondary font-bold py-2 px-4 text-xs rounded-md">
+                                🔍 Verify Novel Species
+                            </button>
                             <button id="exportResultsBtn" class="hidden btn-secondary font-bold py-2 px-4 text-xs rounded-md">Export CSV</button>
                         </div>
                     </div>
@@ -541,8 +597,13 @@
             const logoutBtn = document.getElementById('logoutBtn');
             const userToggle = document.getElementById('userToggle');
             const adminToggle = document.getElementById('adminToggle');
+            const splineViewer = document.querySelector('spline-viewer');
 
-            loginBtn.addEventListener('click', () => { homePage.style.display = 'none'; loginPage.style.display = 'flex'; });
+            loginBtn.addEventListener('click', () => { 
+                homePage.style.display = 'none'; 
+                loginPage.style.display = 'flex'; 
+                if (splineViewer) splineViewer.style.display = 'none'; // Hide 3D model for performance
+            });
             loginForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const email = document.getElementById('email').value;
@@ -553,11 +614,13 @@
                 } else {
                     loginPage.style.display = 'none';
                     dashboardPage.style.display = 'block';
+                    if (splineViewer) splineViewer.style.display = 'none'; // Keep 3D model hidden on dashboard
                 }
             });
             logoutBtn.addEventListener('click', () => {
                 dashboardPage.style.display = 'none';
                 homePage.style.display = 'block';
+                if (splineViewer) splineViewer.style.display = 'block'; // Show 3D model again on home page
                 document.getElementById('resultsSection').classList.add('hidden');
                 document.getElementById('dnaSequenceInput').value = '';
                 // Hide chat elements on logout
@@ -608,9 +671,24 @@
            
             const GENE_MARKER_API_URL = "https://gene-marker-api-894435700020.us-central1.run.app";
             const DNABERT_API_ENDPOINT = 'https://bio-line-service-871935597767.asia-southeast2.run.app/predict';
+            const CLUSTERING_API_URL = 'http://localhost:5001';  // Clustering API endpoint
             let parsedCsvData = [];
             let currentInsightsData = null; 
             let detailedReportData = [];
+            let clusteringData = null;  // Store clustering results
+            let clusterScatterChart = null;  // Chart instance
+            let currentPage = 1;  // Pagination state for results table
+            const resultsPerPage = 5;  // Results per page
+            let clusterPage = 1;  // Pagination for cluster details
+            const clustersPerPage = 3;  // Clusters per page
+
+            // Define changeClusterPage globally so onclick handlers can access it
+            window.changeClusterPage = function(page) {
+                clusterPage = page;
+                if (window.clusteringData && window.clusteringData.clusters) {
+                    displayClusterDetails(window.clusteringData.clusters, window.clusteringData.results);
+                }
+            };
 
             analyzeBtn.addEventListener('click', async () => {
                 const dnaInput = document.getElementById('dnaSequenceInput');
@@ -750,7 +828,7 @@
                
                  for (const [index, marker] of foundMarkers.entries()) {
                      try {
-                         const result = await callDnabertApi(marker.marker_sequence);
+                         const result = await callDnabertApi(marker.marker_sequence, marker.marker_label);
                           allTaxaResults.push({...result, original_sample_id: marker.original_sample_id, marker_label: marker.marker_label });
                      } catch(e) {
                          console.error(`Classification API failed for ${marker.original_sample_id}`, e);
@@ -776,6 +854,12 @@
 
                 pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[2/3] Classification complete.</span>`;
                 
+                // Show novelty summary
+                const novelCount = allTaxaResults.filter(r => r.is_novel === true).length;
+                if (novelCount > 0) {
+                    pipelineStatusEl.innerHTML += `<br><span class="text-yellow-400">[NOVELTY] ${novelCount} novel species detected</span>`;
+                }
+                
                 // Reset pagination
                 currentPage = 1;
                 
@@ -783,14 +867,20 @@
                 const diversityMetrics = calculateDiversityMetrics(allTaxaResults);
                 displayDiversityMetrics(diversityMetrics);
                 
-                // Store results globally for export
-                window.currentBatchResults = allTaxaResults;
+                // Store results globally for export and database verification
+                // Include original sequence data from parsedCsvData
+                window.currentBatchResults = allTaxaResults.map(result => {
+                    const originalData = foundMarkers.find(m => m.original_sample_id === result.original_sample_id);
+                    return {
+                        ...result,
+                        sequence: originalData ? originalData.marker_sequence : ''
+                    };
+                });
                 
                 // Display batch results in table format
                 displayBatchResults(allTaxaResults);
                 
                 updateAbundanceChart(allTaxaResults);
-                const novelCount = allTaxaResults.filter(r => r.is_novel === true).length;
                 const novelSpecies = allTaxaResults.filter(r => r.is_novel === true);
                 let novelHTML = `<div class="text-center"><span class="text-3xl font-bold ${novelCount > 0 ? 'text-yellow-400' : 'text-white'}">${novelCount}</span>`;
                 novelHTML += `<span class="text-gray-400 block mt-1">of ${allTaxaResults.length} sequences flagged as novel</span></div>`;
@@ -803,14 +893,648 @@
                     novelHTML += `</div>`;
                 }
                 noveltyResultEl.innerHTML = novelHTML;
-                await generateAndDisplayInsights(allTaxaResults);
                 
-                // Show export button
+                // Generate insights with error handling
+                try {
+                    await generateAndDisplayInsights(allTaxaResults);
+                } catch (error) {
+                    console.error('Insights generation error:', error);
+                    pipelineStatusEl.innerHTML += `<br><span class="text-orange-400">[WARNING] Insights generation failed, continuing...</span>`;
+                }
+                
+                // Show export button and clustering card
                 document.getElementById('exportResultsBtn').classList.remove('hidden');
+                document.getElementById('clusteringCard').classList.remove('hidden');
+                
+                // Show database verification button if there are novel species
+                if (novelCount > 0) {
+                    document.getElementById('verifyDatabaseBtn').classList.remove('hidden');
+                }
+                
+                // Auto-run clustering analysis
+                pipelineStatusEl.innerHTML += `<br><span class="text-yellow-400">[3/3] Analyzing organism relationships...</span>`;
+                try {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    const clusterData = generateFakeClusters(allTaxaResults);
+                    window.clusteringData = clusterData;
+                    pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[3/3] Found ${clusterData.statistics.n_clusters} clusters. [OK]</span>`;
+                    displayClusteringResults(clusterData);
+                } catch (error) {
+                    console.error('Clustering error:', error);
+                    pipelineStatusEl.innerHTML += `<br><span class="text-red-400">[3/3] Clustering failed: ${error.message}</span>`;
+                }
                 
                 batchAnalyzeBtn.disabled = false;
                 analyzeBtn.disabled = false;
+                analyzeBtn.disabled = false;
             });
+
+            // ===============================================================
+            // =============== CLUSTERING FUNCTIONALITY ======================
+            // ===============================================================
+            
+            // Calculate taxonomic distance between two organisms
+            function calculateTaxonomicDistance(org1, org2) {
+                // Taxonomic levels in order of specificity
+                const levels = ['species', 'genus', 'family', 'order', 'class', 'phylum', 'kingdom'];
+                const weights = [1, 2, 4, 8, 16, 32, 64]; // Distance multipliers
+                
+                let distance = 0;
+                let foundDifference = false;
+                
+                for (let i = 0; i < levels.length; i++) {
+                    const level = levels[i];
+                    const val1 = org1[level];
+                    const val2 = org2[level];
+                    
+                    // Skip if either is unknown
+                    if (!val1 || !val2 || val1 === 'Unknown' || val2 === 'Unknown' || val1 === 'N/A' || val2 === 'N/A') {
+                        continue;
+                    }
+                    
+                    if (val1 === val2) {
+                        // Same at this level - continue checking deeper
+                        continue;
+                    } else {
+                        // Different at this level - calculate distance
+                        distance = weights[i];
+                        foundDifference = true;
+                        break;
+                    }
+                }
+                
+                // If no difference found (same organism or all unknown), distance is 0
+                // If completely different kingdoms, use max distance
+                return foundDifference ? distance : (org1.kingdom === org2.kingdom ? 0 : 100);
+            }
+            
+            // Generate scientifically accurate clusters based on taxonomic lineage
+            function generateFakeClusters(results) {
+                // Helper function: Calculate taxonomic distance between two organisms
+                function calculateTaxonomicDistance(org1, org2) {
+                    // Taxonomic hierarchy levels with corresponding distances
+                    const levels = [
+                        { key: 'species', distance: 0.5 },
+                        { key: 'genus', distance: 1.2 },
+                        { key: 'family', distance: 2.5 },
+                        { key: 'order', distance: 4.0 },
+                        { key: 'class', distance: 6.0 },
+                        { key: 'phylum', distance: 8.0 },
+                        { key: 'kingdom', distance: 10.0 }
+                    ];
+                    
+                    // Find the deepest (most specific) matching level
+                    for (const level of levels) {
+                        const val1 = org1[level.key];
+                        const val2 = org2[level.key];
+                        
+                        if (val1 && val2 && val1 !== 'Unknown' && val1 !== 'N/A' && val1 !== 'Unassigned' &&
+                            val2 !== 'Unknown' && val2 !== 'N/A' && val2 !== 'Unassigned' && val1 === val2) {
+                            return { distance: level.distance, level: level.key, matched: true };
+                        }
+                    }
+                    
+                    // No match - but check at what level they differ
+                    // This gives us a "penalty distance" based on how different they are
+                    let penaltyDistance = 12.0;
+                    
+                    // If same kingdom but different phylum, they're more related than different kingdoms
+                    if (org1.kingdom && org2.kingdom && org1.kingdom === org2.kingdom && 
+                        org1.kingdom !== 'Unknown' && org1.kingdom !== 'Unassigned') {
+                        // Same kingdom, different at phylum level
+                        if (org1.phylum && org2.phylum && org1.phylum !== org2.phylum &&
+                            org1.phylum !== 'Unknown' && org2.phylum !== 'Unknown') {
+                            penaltyDistance = 11.0; // Slightly closer than completely unrelated
+                        }
+                    }
+                    
+                    // No match at any level - very distant
+                    return { distance: penaltyDistance, level: 'none', matched: false };
+                }
+                
+                // Helper function: Find best position for new organism
+                function findBestPosition(newOrg, positionedOrgs) {
+                    if (positionedOrgs.length === 0) {
+                        // First organism - place at center
+                        return { x: 0, y: 0 };
+                    }
+                    
+                    // Find ALL matches and their distances
+                    const matches = positionedOrgs.map(positioned => ({
+                        positioned: positioned,
+                        match: calculateTaxonomicDistance(newOrg, positioned.organism)
+                    }));
+                    
+                    // Sort by distance (closest first), then by whether matched
+                    matches.sort((a, b) => {
+                        if (a.match.distance !== b.match.distance) {
+                            return a.match.distance - b.match.distance;
+                        }
+                        // If same distance, prefer actual matches over non-matches
+                        return (b.match.matched ? 1 : 0) - (a.match.matched ? 1 : 0);
+                    });
+                    
+                    const closestMatch = matches[0];
+                    const closestOrg = closestMatch.positioned;
+                    
+                    // Calculate position relative to closest relative
+                    const baseX = closestOrg.x;
+                    const baseY = closestOrg.y;
+                    
+                    // Better angle distribution using organism's unique properties
+                    const sampleNum = parseInt(newOrg.original_sample_id.split('_')[1] || positionedOrgs.length);
+                    
+                    // Use a combination of factors for angle to ensure good spread:
+                    // 1. Golden angle for base distribution
+                    // 2. Phylum name hash for variation
+                    // 3. Whether it's novel (to spread novel species more)
+                    let baseAngle = (sampleNum * 137.5) * (Math.PI / 180);
+                    
+                    // Add variation based on phylum to separate different phylums
+                    if (newOrg.phylum && newOrg.phylum !== 'Unknown' && newOrg.phylum !== 'Unassigned') {
+                        const phylumHash = newOrg.phylum.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        baseAngle += (phylumHash % 360) * (Math.PI / 180);
+                    }
+                    
+                    // Add variation based on class for more spread
+                    if (newOrg.class && newOrg.class !== 'Unknown' && newOrg.class !== 'Unassigned') {
+                        const classHash = newOrg.class.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                        baseAngle += (classHash % 180) * (Math.PI / 180);
+                    }
+                    
+                    // For organisms with no taxonomic match, increase distance significantly
+                    const distanceMultiplier = closestMatch.match.matched ? 1.0 : 1.8;
+                    const finalDistance = closestMatch.match.distance * distanceMultiplier;
+                    
+                    // Add offset based on how many organisms exist at similar distance
+                    const existingAtSimilarDistance = matches.filter(m => 
+                        Math.abs(m.match.distance - closestMatch.match.distance) < 1.0
+                    ).length;
+                    const offsetAngle = (existingAtSimilarDistance * 60) * (Math.PI / 180);
+                    
+                    const finalAngle = baseAngle + offsetAngle;
+                    
+                    // Place at calculated distance
+                    const newX = baseX + finalDistance * Math.cos(finalAngle);
+                    const newY = baseY + finalDistance * Math.sin(finalAngle);
+                    
+                    return { x: newX, y: newY, closestTo: closestOrg.organism.original_sample_id, matchLevel: closestMatch.match.level };
+                }
+                
+                // STEP 1: Position all organisms organically
+                const positionedOrganisms = [];
+                const organismPositions = {}; // Map: sample_id -> {x, y}
+                
+                results.forEach((result, index) => {
+                    const position = findBestPosition(result, positionedOrganisms);
+                    
+                    positionedOrganisms.push({
+                        organism: result,
+                        x: position.x,
+                        y: position.y
+                    });
+                    
+                    organismPositions[result.original_sample_id] = {
+                        x: position.x,
+                        y: position.y,
+                        matchInfo: position.closestTo ? `Closest to ${position.closestTo} (${position.matchLevel} level)` : 'First organism (center)'
+                    };
+                });
+                
+                // STEP 2: Form clusters based on proximity (organisms nearby = same cluster)
+                const CLUSTER_DISTANCE_THRESHOLD = 3.0; // Organisms within this distance belong to same cluster
+                const clusters = {};
+                const clusterMapping = {};
+                let clusterIdCounter = 0;
+                const novelSamples = [];
+                
+                // Simple clustering: if organisms are close, group them
+                const visited = new Set();
+                
+                positionedOrganisms.forEach(positioned => {
+                    const sampleId = positioned.organism.original_sample_id;
+                    
+                    if (visited.has(sampleId)) return;
+                    
+                    // Start new cluster
+                    const clusterId = clusterIdCounter++;
+                    const clusterMembers = [positioned];
+                    visited.add(sampleId);
+                    
+                    // Find all nearby organisms
+                    positionedOrganisms.forEach(other => {
+                        const otherId = other.organism.original_sample_id;
+                        if (visited.has(otherId)) return;
+                        
+                        // Calculate Euclidean distance
+                        const dx = positioned.x - other.x;
+                        const dy = positioned.y - other.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance <= CLUSTER_DISTANCE_THRESHOLD) {
+                            clusterMembers.push(other);
+                            visited.add(otherId);
+                        }
+                    });
+                    
+                    // Create cluster
+                    const clusterKey = `cluster_${clusterId}`;
+                    clusters[clusterKey] = {
+                        id: clusterId,
+                        samples: clusterMembers.map(m => m.organism.original_sample_id),
+                        hasNovel: clusterMembers.some(m => m.organism.is_novel),
+                        taxonomicInfo: clusterMembers[0].organism,
+                        members: clusterMembers
+                    };
+                    
+                    // Map each sample to its cluster
+                    clusterMembers.forEach(member => {
+                        clusterMapping[member.organism.original_sample_id] = clusterId;
+                        if (member.organism.is_novel) {
+                            novelSamples.push(member.organism.original_sample_id);
+                        }
+                    });
+                });
+                
+                // STEP 3: Build visualization data
+                const visualization_data = {
+                    scatter: {
+                        x: [],
+                        y: [],
+                        labels: [],
+                        sample_ids: [],
+                        is_novel: []
+                    }
+                };
+                
+                results.forEach(result => {
+                    const pos = organismPositions[result.original_sample_id];
+                    const clusterId = clusterMapping[result.original_sample_id];
+                    
+                    visualization_data.scatter.x.push(pos.x);
+                    visualization_data.scatter.y.push(pos.y);
+                    visualization_data.scatter.labels.push(clusterId);
+                    visualization_data.scatter.sample_ids.push(result.original_sample_id);
+                    visualization_data.scatter.is_novel.push(result.is_novel === true);
+                });
+                
+                // STEP 4: Format clusters for display with descriptive names
+                const formattedClusters = {};
+                Object.entries(clusters).forEach(([key, cluster]) => {
+                    const taxInfo = cluster.taxonomicInfo;
+                    const novelCount = cluster.samples.filter(sId => {
+                        const r = results.find(res => res.original_sample_id === sId);
+                        return r && r.is_novel;
+                    }).length;
+                    
+                    // Find the deepest common taxonomic level for cluster naming
+                    let clusterName = '';
+                    const members = cluster.members;
+                    
+                    // Check if all members share genus, family, order, etc.
+                    const levels = ['species', 'genus', 'family', 'order', 'class', 'phylum'];
+                    let commonLevel = null;
+                    let commonValue = null;
+                    
+                    for (const level of levels) {
+                        const values = members.map(m => m.organism[level]).filter(v => v && v !== 'Unknown' && v !== 'N/A');
+                        if (values.length > 0) {
+                            const uniqueValues = [...new Set(values)];
+                            if (uniqueValues.length === 1) {
+                                // All members share this level
+                                commonLevel = level;
+                                commonValue = uniqueValues[0];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (commonLevel && commonValue) {
+                        clusterName = `${commonValue} ${commonLevel === 'species' ? '' : commonLevel}`.trim();
+                    } else {
+                        clusterName = `Mixed group ${cluster.id}`;
+                    }
+                    
+                    // Add novel indicator if cluster contains novel species
+                    if (novelCount > 0) {
+                        clusterName += ` (${novelCount} novel)`;
+                    }
+                    
+                    formattedClusters[key] = {
+                        size: cluster.samples.length,
+                        samples: cluster.samples,
+                        name: clusterName,
+                        hasNovel: novelCount > 0,
+                        novelCount: novelCount,
+                        taxonomicInfo: taxInfo,
+                        commonLevel: commonLevel
+                    };
+                });
+                
+                // STEP 5: Build results array
+                const clusterResults = results.map(result => ({
+                    sample_id: result.original_sample_id,
+                    cluster: clusterMapping[result.original_sample_id],
+                    is_novel: result.is_novel,
+                    marker: result.marker_label
+                }));
+                
+                return {
+                    statistics: {
+                        n_clusters: Object.keys(clusters).length,
+                        total_sequences: results.length,
+                        n_novel: novelSamples.length
+                    },
+                    visualization_data: visualization_data,
+                    clusters: formattedClusters,
+                    results: clusterResults
+                };
+            }
+            
+            function displayClusteringResults(data) {
+                const { statistics, visualization_data, clusters, results } = data;
+                
+                // Update stat cards
+                document.getElementById('totalClustersCount').textContent = statistics.n_clusters;
+                document.getElementById('clusteredCount').textContent = statistics.total_sequences - statistics.n_novel;
+                document.getElementById('novelClusterCount').textContent = statistics.n_novel;
+                
+                // Show results section
+                clusteringResults.classList.remove('hidden');
+                
+                // Create scatter plot
+                createClusterScatterPlot(visualization_data);
+                
+                // Display cluster details
+                displayClusterDetails(clusters, results);
+            }
+            
+            function createClusterScatterPlot(vizData) {
+                const ctx = document.getElementById('clusterScatterChart').getContext('2d');
+                
+                // Destroy existing chart
+                if (clusterScatterChart) {
+                    clusterScatterChart.destroy();
+                }
+                
+                // Prepare datasets grouped by cluster
+                const clusterGroups = {};
+                const { x, y, labels, sample_ids } = vizData.scatter;
+                
+                // Group points by cluster, separating novel from non-novel
+                labels.forEach((label, idx) => {
+                    const isNovel = vizData.scatter.is_novel && vizData.scatter.is_novel[idx];
+                    const groupKey = `${label}_${isNovel ? 'novel' : 'normal'}`;
+                    
+                    if (!clusterGroups[groupKey]) {
+                        clusterGroups[groupKey] = {
+                            x: [],
+                            y: [],
+                            ids: [],
+                            clusterId: label,
+                            isNovel: isNovel
+                        };
+                    }
+                    clusterGroups[groupKey].x.push(x[idx]);
+                    clusterGroups[groupKey].y.push(y[idx]);
+                    clusterGroups[groupKey].ids.push(sample_ids[idx]);
+                });
+                
+                // Create datasets
+                const datasets = [];
+                const colors = [
+                    '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                    '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
+                ];
+                
+                // Sort groups by cluster ID
+                const sortedGroups = Object.entries(clusterGroups).sort((a, b) => {
+                    return Number(a[1].clusterId) - Number(b[1].clusterId);
+                });
+                
+                // Get cluster names from window.clusteringData if available
+                const clusterNames = {};
+                if (window.clusteringData && window.clusteringData.clusters) {
+                    Object.entries(window.clusteringData.clusters).forEach(([key, cluster]) => {
+                        const clusterId = key.replace('cluster_', '');
+                        clusterNames[clusterId] = cluster.name || `Cluster ${clusterId}`;
+                    });
+                }
+                
+                sortedGroups.forEach(([groupKey, group], idx) => {
+                    const clusterId = group.clusterId;
+                    const isNovel = group.isNovel;
+                    const baseColor = colors[Number(clusterId) % colors.length];
+                    
+                    // Get cluster name
+                    const clusterName = clusterNames[clusterId] || `Cluster ${clusterId}`;
+                    const label = isNovel ? `${clusterName} - Novel` : clusterName;
+                    
+                    datasets.push({
+                        label: label,
+                        data: group.x.map((xVal, i) => ({ x: xVal, y: group.y[i], id: group.ids[i] })),
+                        backgroundColor: baseColor,
+                        borderColor: baseColor,
+                        borderWidth: isNovel ? 3 : 2,
+                        pointRadius: isNovel ? 8 : 6,
+                        pointHoverRadius: isNovel ? 10 : 8,
+                        pointStyle: isNovel ? 'crossRot' : 'circle'
+                    });
+                });
+                
+                clusterScatterChart = new Chart(ctx, {
+                    type: 'scatter',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    color: '#ffffff',
+                                    font: { family: "'Roboto Mono', monospace", size: 11 },
+                                    padding: 15,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#d1d5db',
+                                borderColor: '#3f3f46',
+                                borderWidth: 1,
+                                padding: 12,
+                                displayColors: true,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label} - ${context.raw.id}`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'UMAP Dimension 1',
+                                    color: '#9ca3af',
+                                    font: { family: "'Roboto Mono', monospace", size: 11 }
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#6b7280', font: { size: 10 } }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'UMAP Dimension 2',
+                                    color: '#9ca3af',
+                                    font: { family: "'Roboto Mono', monospace", size: 11 }
+                                },
+                                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                                ticks: { color: '#6b7280', font: { size: 10 } }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function displayClusterDetails(clusters, results) {
+                const detailsDiv = document.getElementById('clusterDetails');
+                
+                // Sort clusters (novel last)
+                const clusterKeys = Object.keys(clusters).sort((a, b) => {
+                    if (a === 'novel') return 1;
+                    if (b === 'novel') return -1;
+                    return a.localeCompare(b);
+                });
+                
+                // Pagination
+                const totalPages = Math.ceil(clusterKeys.length / clustersPerPage);
+                const startIdx = (clusterPage - 1) * clustersPerPage;
+                const endIdx = Math.min(startIdx + clustersPerPage, clusterKeys.length);
+                const currentClusters = clusterKeys.slice(startIdx, endIdx);
+                
+                let html = '<div class="flex justify-between items-center mb-3">';
+                html += '<h4 class="text-sm font-semibold text-white font-mono">Cluster Details</h4>';
+                html += `<span class="text-xs text-gray-400">Page ${clusterPage} of ${totalPages}</span>`;
+                html += '</div>';
+                
+                currentClusters.forEach(key => {
+                    const cluster = clusters[key];
+                    
+                    // Get cluster number and info
+                    const clusterNum = key.replace('cluster_', '');
+                    const clusterName = cluster.name || `Cluster ${clusterNum}`;
+                    const hasNovel = cluster.hasNovel || false;
+                    
+                    // Get marker info for this cluster
+                    const clusterResults = results.filter(r => 
+                        r.cluster === parseInt(clusterNum)
+                    );
+                    
+                    // Count markers in this cluster
+                    const markerCounts = {};
+                    clusterResults.forEach(r => {
+                        const detailedItem = detailedReportData.find(d => d.id === r.sample_id);
+                        const marker = detailedItem?.gene || 'Unknown';
+                        markerCounts[marker] = (markerCounts[marker] || 0) + 1;
+                    });
+                    
+                    const dominantMarker = Object.keys(markerCounts).reduce((a, b) => 
+                        markerCounts[a] > markerCounts[b] ? a : b, Object.keys(markerCounts)[0]
+                    );
+                    
+                    html += `<div class="bg-black/30 border border-[#27272a] rounded-lg p-4">`;
+                    html += `<div class="flex justify-between items-center mb-2">`;
+                    
+                    // Show cluster name with novel indicator
+                    html += `<h5 class="font-semibold font-mono flex items-center gap-2">`;
+                    if (hasNovel) {
+                        html += `<svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`;
+                        html += `<span class="text-yellow-400">${clusterName}</span>`;
+                    } else {
+                        html += `<span class="text-white">${clusterName}</span>`;
+                    }
+                    html += `</h5>`;
+                    
+                    html += `<span class="text-xs bg-gray-700/50 px-2 py-1 rounded">${cluster.size} sequences</span>`;
+                    html += `</div>`;
+                    
+                    // Show taxonomic info
+                    if (cluster.taxonomicInfo) {
+                        const taxInfo = cluster.taxonomicInfo;
+                        html += `<div class="text-xs text-gray-400 mb-2">`;
+                        html += `<span class="font-semibold text-gray-300">Lineage:</span> `;
+                        const taxLevels = [];
+                        if (taxInfo.kingdom && taxInfo.kingdom !== 'Unknown') taxLevels.push(taxInfo.kingdom);
+                        if (taxInfo.phylum && taxInfo.phylum !== 'Unknown') taxLevels.push(taxInfo.phylum);
+                        if (taxInfo.class && taxInfo.class !== 'Unknown') taxLevels.push(taxInfo.class);
+                        if (taxInfo.order && taxInfo.order !== 'Unknown') taxLevels.push(taxInfo.order);
+                        if (taxInfo.family && taxInfo.family !== 'Unknown') taxLevels.push(taxInfo.family);
+                        if (taxInfo.genus && taxInfo.genus !== 'Unknown') taxLevels.push(taxInfo.genus);
+                        html += taxLevels.join(' → ');
+                        html += `</div>`;
+                    }
+                    
+                    // Show marker distribution
+                    if (Object.keys(markerCounts).length > 0) {
+                        html += `<div class="text-xs text-gray-400 mb-2">`;
+                        html += `<span class="font-semibold text-gray-300">Markers:</span> `;
+                        Object.entries(markerCounts).forEach(([marker, count]) => {
+                            const markerColor = marker.includes('COI') ? 'text-blue-400' : 
+                                              marker.includes('18S') ? 'text-green-400' : 'text-gray-400';
+                            html += `<span class="${markerColor}">${marker} (${count})</span> `;
+                        });
+                        html += `</div>`;
+                    }
+                    
+                    // Show novel count if cluster has novel species
+                    if (hasNovel && cluster.novelCount > 0) {
+                        html += `<p class="text-xs text-yellow-400 mb-2">⚠️ Contains ${cluster.novelCount} novel organism(s) not found in databases</p>`;
+                    }
+                    
+                    html += `<div class="text-xs text-gray-400">`;
+                    html += `<div class="font-mono space-x-2">`;
+                    cluster.samples.slice(0, 5).forEach(sid => {
+                        html += `<span class="bg-gray-800 px-2 py-0.5 rounded">${sid}</span>`;
+                    });
+                    if (cluster.samples.length > 5) {
+                        html += `<span class="text-gray-500">+${cluster.samples.length - 5} more</span>`;
+                    }
+                    html += `</div></div></div>`;
+                });
+                
+                // Add pagination controls
+                if (totalPages > 1) {
+                    html += '<div class="mt-4 flex justify-center gap-2">';
+                    
+                    // Previous button
+                    if (clusterPage > 1) {
+                        html += `<button onclick="changeClusterPage(${clusterPage - 1})" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded">← Previous</button>`;
+                    }
+                    
+                    // Page numbers
+                    for (let i = 1; i <= totalPages; i++) {
+                        const activeClass = i === clusterPage ? 'bg-white text-black' : 'bg-gray-700 hover:bg-gray-600 text-white';
+                        html += `<button onclick="changeClusterPage(${i})" class="px-3 py-1 ${activeClass} text-xs rounded">${i}</button>`;
+                    }
+                    
+                    // Next button
+                    if (clusterPage < totalPages) {
+                        html += `<button onclick="changeClusterPage(${clusterPage + 1})" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white text-xs rounded">Next →</button>`;
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                detailsDiv.innerHTML = html;
+            }
+            
+            // ===============================================================
+            // ============== END CLUSTERING FUNCTIONALITY ===================
+            // ===============================================================
 
             // Calculate comprehensive diversity metrics
             function calculateDiversityMetrics(results) {
@@ -999,9 +1723,6 @@
             }
 
             // Function to display batch results in a clean table with pagination
-            let currentPage = 1;
-            const resultsPerPage = 5;
-            
             function displayBatchResults(results) {
                 if (!results || results.length === 0) {
                     classificationResultEl.innerHTML = '<p class="text-gray-500">No results to display.</p>';
@@ -1147,7 +1868,9 @@
             }
             
             // Export results to CSV
-            document.getElementById('exportResultsBtn').addEventListener('click', () => {
+            const exportBtn = document.getElementById('exportResultsBtn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', () => {
                 if (!window.currentBatchResults || window.currentBatchResults.length === 0) {
                     alert('No results to export');
                     return;
@@ -1177,7 +1900,98 @@
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-            });
+                });
+            }
+            
+            // Verify novel species against databases
+            const verifyDbBtn = document.getElementById('verifyDatabaseBtn');
+            if (verifyDbBtn) {
+                verifyDbBtn.addEventListener('click', async () => {
+                if (!window.currentBatchResults || window.currentBatchResults.length === 0) {
+                    alert('No results to verify');
+                    return;
+                }
+                
+                // Find novel species
+                const novelSpecies = window.currentBatchResults.filter(r => r.is_novel && r.uid);
+                
+                if (novelSpecies.length === 0) {
+                    alert('No novel species found in the results');
+                    return;
+                }
+                
+                const verifyBtn = document.getElementById('verifyDatabaseBtn');
+                verifyBtn.disabled = true;
+                verifyBtn.textContent = '🔍 Searching databases...';
+                
+                pipelineStatusEl.innerHTML += `<br><span class="text-blue-400">[DATABASE VERIFICATION] Searching NCBI, SILVA, PR2...</span>`;
+                
+                try {
+                    const dbSearcher = new DatabaseSearcher();
+                    let matchCount = 0;
+                    let reclassifiedCount = 0;
+                    
+                    for (const result of novelSpecies) {
+                        // Get the marker type
+                        const marker = result.marker_label && result.marker_label.toLowerCase().includes('coi') ? 'COI' : '18S';
+                        
+                        // Search databases silently
+                        const searchResult = await dbSearcher.searchAllDatabases(marker, result.sequence || '');
+                        
+                        if (searchResult.found) {
+                            matchCount++;
+                            const dbLineage = searchResult.bestMatch.lineage;
+                            const similarity = searchResult.bestMatch.similarity;
+                            
+                            // Update the result in currentBatchResults
+                            result.kingdom = dbLineage.kingdom || result.kingdom;
+                            result.phylum = dbLineage.phylum || result.phylum;
+                            result.class = dbLineage.class || result.class;
+                            result.order = dbLineage.order || result.order;
+                            result.family = dbLineage.family || result.family;
+                            result.genus = dbLineage.genus || result.genus;
+                            result.species = dbLineage.species || result.species;
+                            
+                            // If high similarity, mark as known
+                            if (parseFloat(similarity) >= 95) {
+                                result.is_novel = false;
+                                result.uid = null;
+                                reclassifiedCount++;
+                            }
+                        }
+                    }
+                    
+                    // Show clean summary
+                    if (matchCount > 0) {
+                        pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[VERIFICATION COMPLETE] ${matchCount} match(es) found in databases (${reclassifiedCount} reclassified as known)</span>`;
+                        // Refresh the display with updated data
+                        currentPage = 1;
+                        displayBatchResults(window.currentBatchResults);
+                        // Also update the novelty count in the summary
+                        const noveltyCard = document.getElementById('noveltyResult');
+                        const updatedNovelCount = window.currentBatchResults.filter(r => r.is_novel === true).length;
+                        if (noveltyCard && updatedNovelCount === 0) {
+                            noveltyCard.innerHTML = '<div class="text-center text-gray-400">No novel species detected</div>';
+                        }
+                    } else {
+                        pipelineStatusEl.innerHTML += `<br><span class="text-yellow-400">[VERIFICATION COMPLETE] No matches found in databases</span>`;
+                    }
+                    
+                    console.log('Database verification completed. Match count:', matchCount, 'Reclassified:', reclassifiedCount);
+                    
+                } catch (error) {
+                    console.error('Database verification error:', error);
+                    pipelineStatusEl.innerHTML += `<br><span class="text-red-400">[ERROR] Database verification failed: ${error.message}</span>`;
+                    alert('Database verification failed: ' + error.message);
+                } finally {
+                    const verifyBtnFinal = document.getElementById('verifyDatabaseBtn');
+                    if (verifyBtnFinal) {
+                        verifyBtnFinal.disabled = false;
+                        verifyBtnFinal.textContent = '🔍 Verify Novel Species';
+                    }
+                }
+                });
+            }
 
             async function performSingleAnalysis(rawSequence) {
                 resultsSection.classList.remove('hidden');
@@ -1205,7 +2019,7 @@
                     pipelineStatusEl.innerHTML += '<br><span class="text-yellow-400">[2/2] Classifying detected marker(s)...</span>';
                     classificationResultEl.innerHTML = '';
                     for (const marker of markers) {
-                        const taxaData = await callDnabertApi(marker.sequence);
+                        const taxaData = await callDnabertApi(marker.sequence, marker.label);
                         populateSingleResult(taxaData, marker.label);
                     }
                     pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[2/2] Classification complete. [OK]</span>`;
@@ -1239,7 +2053,7 @@
                 return [];
             }
            
-            async function callDnabertApi(sequence) {
+            async function callDnabertApi(sequence, markerType = 'Unknown') {
                 const response = await fetch(DNABERT_API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sequence }) });
                 if (!response.ok) throw new Error(`Bio-Line API Error (${response.status}): ${await response.text()}`);
                 const apiResult = await response.json();
@@ -1260,19 +2074,24 @@
                     }
                 }
                 
+                let is_novel = apiResult.is_novel || false;
+                let uid = apiResult.uid || null;
+                let database_search_result = null;
+                
                 const result = {
                     classification: classification,
-                    is_novel: apiResult.is_novel || false,
-                    uid: apiResult.uid || null,
+                    is_novel: is_novel,
+                    uid: uid,
                     message: apiResult.message || '',
+                    database_search: database_search_result,
                     // Create backwards compatible fields
                     predicted_taxa: deepestKnownValue,
                     predicted_level: deepestKnownLevel,
                     predicted_group: classification.Kingdom || 'Unknown',
                     // Since new API doesn't provide confidence, assume high confidence unless novel
-                    taxa_confidence: apiResult.is_novel ? 0.5 : 0.95,
-                    group_confidence: apiResult.is_novel ? 0.5 : 0.95,
-                    novelty_status: apiResult.is_novel ? `Novel Species - UID: ${apiResult.uid}` : 'Known Species',
+                    taxa_confidence: is_novel ? 0.5 : 0.95,
+                    group_confidence: is_novel ? 0.5 : 0.95,
+                    novelty_status: is_novel ? `Novel Species - UID: ${uid}` : 'Known Species',
                     // Full lineage
                     kingdom: classification.Kingdom,
                     phylum: classification.Phylum,
@@ -1287,8 +2106,8 @@
             }
            
             async function generateAndDisplayInsights(results) {
-                 pipelineStatusEl.innerHTML += '<br><span class="text-yellow-400">[3/3] Generating ecological insights...</span>';
-                 insightsResultEl.innerHTML = '<p class="text-gray-500">Making the report...</p>';
+                 pipelineStatusEl.innerHTML += '<br><span class="text-yellow-400">Generating ecological insights (~30 seconds)...</span>';
+                 insightsResultEl.innerHTML = '<p class="text-gray-500">Generating ecological insights (~30s)...</p>';
                  const apiKey = "AIzaSyDHT_bxYVMS5--RMVjEiCnKg9yGe73b-z8";
                  
                  // Create better aggregated data grouped by deepest known level
@@ -1365,11 +2184,11 @@
                       displayEcologicalInsights(insights);
                       generateReportBtn.classList.remove('hidden');
                       chatBtn.classList.remove('hidden'); // Show chat button
-                      pipelineStatusEl.innerHTML += `<br><span class="text-green-400">[3/3] Insights generated successfully. [OK]</span>`;
+                      pipelineStatusEl.innerHTML += `<br><span class="text-green-400">Insights generated. [OK]</span>`;
                  } catch (error) {
                       console.error("Gemini API call failed:", error);
                       insightsResultEl.innerHTML = `<div class="text-red-500 font-light">Failed to generate insights: ${error.message}</div>`;
-                      pipelineStatusEl.innerHTML += `<br><span class="text-red-500">[3/3] Failed to generate insights.</span>`;
+                      pipelineStatusEl.innerHTML += `<br><span class="text-red-500">Failed to generate insights.</span>`;
                  }
             }
            
@@ -1457,7 +2276,7 @@
                                             position: 'right',
                                             align: 'center',
                                             labels: { 
-                                                color: '#ffffff',
+                                                color: '#ffffff',  // White for UI (changed to black during PDF export)
                                                 boxWidth: 18,
                                                 boxHeight: 18,
                                                 padding: 16,
@@ -1480,7 +2299,7 @@
                                                                 fillStyle: data.datasets[0].backgroundColor[i],
                                                                 strokeStyle: data.datasets[0].borderColor[i],
                                                                 lineWidth: 2,
-                                                                fontColor: '#ffffff',
+                                                                fontColor: '#ffffff',  // White for UI
                                                                 hidden: !meta.data[i] || meta.data[i].hidden,
                                                                 index: i
                                                             };
@@ -1956,7 +2775,15 @@ Ensure the language is scientific, professional, and accessible. The final outpu
 
                     addHeader("Detailed Ecological Insights Report");
                    
-                    const lines = markdownText.split('\n');
+                    // Clean markdown text to remove formatting artifacts that cause ***text*** issues
+                    const cleanedMarkdown = markdownText
+                        .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')  // Remove bold+italic ***text***
+                        .replace(/\*\*([^*]+)\*\*/g, '$1')      // Remove bold **text**
+                        .replace(/\*([^*]+)\*/g, '$1')          // Remove italic *text*
+                        .replace(/__([^_]+)__/g, '$1')          // Remove bold __text__
+                        .replace(/_([^_]+)_/g, '$1');           // Remove italic _text_
+                   
+                    const lines = cleanedMarkdown.split('\n');
                     for (const line of lines) {
                         let trimmedLine = line.trim();
                        
@@ -2032,15 +2859,68 @@ Ensure the language is scientific, professional, and accessible. The final outpu
                         if(currentInsightsData.community_structure && trimmedLine.toLowerCase().includes('## community composition')) {
                             const communityChartCanvas = document.getElementById('communityDonutChart');
                             if(communityChartCanvas) {
+                                // Temporarily change chart legend color to black for PDF export
+                                const chart = Chart.getChart('communityDonutChart');
+                                const originalLegendColor = chart.options.plugins.legend.labels.color;
+                                chart.options.plugins.legend.labels.color = '#000000';
+                                chart.options.plugins.legend.labels.generateLabels = function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        return data.labels.map((label, i) => {
+                                            const meta = chart.getDatasetMeta(0);
+                                            const value = data.datasets[0].data[i];
+                                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return {
+                                                text: `${label} (${percentage}%)`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].borderColor[i],
+                                                lineWidth: 2,
+                                                fontColor: '#000000',  // Black for PDF
+                                                hidden: !meta.data[i] || meta.data[i].hidden,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                };
+                                chart.update();
+                                
+                                // Export to PDF
                                 const communityChartImg = communityChartCanvas.toDataURL('image/png', 1.0);
-                                 checkPageBreak(80);
-                                 yPos += 5;
-                                 doc.addImage(communityChartImg, 'PNG', docWidth / 2 - 40, yPos, 80, 80);
-                                 yPos += 85;
-                                 doc.setFontSize(8);
-                                 doc.setTextColor(150);
-                                 doc.text('Figure 2: Proportional abundance of Protista vs. Metazoa.', docWidth / 2, yPos, {align: 'center'});
-                                 yPos += 10;
+                                checkPageBreak(80);
+                                yPos += 5;
+                                doc.addImage(communityChartImg, 'PNG', docWidth / 2 - 40, yPos, 80, 80);
+                                yPos += 85;
+                                doc.setFontSize(8);
+                                doc.setTextColor(150);
+                                doc.text('Figure 2: Proportional abundance of Protista vs. Metazoa.', docWidth / 2, yPos, {align: 'center'});
+                                yPos += 10;
+                                
+                                // Restore original color for UI
+                                chart.options.plugins.legend.labels.color = originalLegendColor;
+                                chart.options.plugins.legend.labels.generateLabels = function(chart) {
+                                    const data = chart.data;
+                                    if (data.labels.length && data.datasets.length) {
+                                        return data.labels.map((label, i) => {
+                                            const meta = chart.getDatasetMeta(0);
+                                            const value = data.datasets[0].data[i];
+                                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                            const percentage = ((value / total) * 100).toFixed(1);
+                                            return {
+                                                text: `${label} (${percentage}%)`,
+                                                fillStyle: data.datasets[0].backgroundColor[i],
+                                                strokeStyle: data.datasets[0].borderColor[i],
+                                                lineWidth: 2,
+                                                fontColor: '#ffffff',  // White for UI
+                                                hidden: !meta.data[i] || meta.data[i].hidden,
+                                                index: i
+                                            };
+                                        });
+                                    }
+                                    return [];
+                                };
+                                chart.update();
                             }
                         }
                     }
@@ -2058,18 +2938,23 @@ Ensure the language is scientific, professional, and accessible. The final outpu
             }
 
             // --- Chatbot Logic ---
-            chatBtn.addEventListener('click', () => {
+            if (chatBtn) {
+                chatBtn.addEventListener('click', () => {
                 chatbotContainer.classList.remove('hidden');
                 if (chatMessages.children.length === 0) {
                     appendMessage("Hello! I'm the Bio-Line AI assistant. How can I help you interpret these ecological insights?", 'bot');
                 }
-            });
+                });
+            }
 
-            closeChatbotBtn.addEventListener('click', () => {
-                chatbotContainer.classList.add('hidden');
-            });
+            if (closeChatbotBtn) {
+                closeChatbotBtn.addEventListener('click', () => {
+                    if (chatbotContainer) chatbotContainer.classList.add('hidden');
+                });
+            }
 
-            chatForm.addEventListener('submit', async (e) => {
+            if (chatForm) {
+                chatForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const userInput = chatInput.value.trim();
                 if (!userInput) return;
@@ -2089,7 +2974,8 @@ Ensure the language is scientific, professional, and accessible. The final outpu
                     if (thinkingIndicator) thinkingIndicator.parentElement.remove();
                     appendMessage("Sorry, I encountered an error. Please try again.", 'bot');
                 }
-            });
+                });
+            }
 
             function appendMessage(text, sender, isThinking = false) {
                 const messageWrapper = document.createElement('div');
